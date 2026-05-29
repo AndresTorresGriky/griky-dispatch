@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Disponibilidad Contenidistas · Griky</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0F0F13;
+    --surface: #17171D;
+    --surface2: #1E1E27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #E8E8F0;
+    --text2: #8888A0;
+    --text3: #55556A;
+    --accent: #6C63FF;
+    --accent2: #A78BFA;
+    --green: #34D399;
+    --green-bg: rgba(52,211,153,0.1);
+    --red: #F87171;
+    --red-bg: rgba(248,113,113,0.1);
+    --amber: #FBBF24;
+    --amber-bg: rgba(251,191,36,0.1);
+    --blue: #60A5FA;
+    --blue-bg: rgba(96,165,250,0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* NAV */
+  nav { display: flex; align-items: center; gap: 12px; padding: 16px 32px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(15,15,19,0.92); backdrop-filter: blur(12px); z-index: 100; }
+  .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+  .logo span { color: var(--accent2); }
+  nav .spacer { flex: 1; }
+  .nav-date { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .btn-refresh { display: flex; align-items: center; gap: 6px; font-size: 12px; font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 12px; cursor: pointer; transition: all .15s; }
+  .btn-refresh:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
+  .btn-refresh svg { width: 13px; height: 13px; }
+
+  /* MAIN */
+  main { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* CONFIG */
+  .config-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; }
+  .config-card h3 { font-size: 13px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+  .config-row { display: flex; gap: 10px; align-items: center; }
+  .config-row input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 13px; color: var(--text); font-family: 'DM Mono', monospace; outline: none; }
+  .config-row input:focus { border-color: var(--accent); }
+  .btn-primary { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 9px 18px; cursor: pointer; font-weight: 500; transition: opacity .15s; white-space: nowrap; }
+  .btn-primary:hover { opacity: .85; }
+  .status-msg { font-size: 12px; margin-top: 8px; min-height: 16px; font-family: 'DM Mono', monospace; }
+  .status-msg.ok { color: var(--green); }
+  .status-msg.err { color: var(--red); }
+  .status-msg.loading { color: var(--text2); }
+
+  /* FILTERS */
+  .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-bar label { font-size: 12px; color: var(--text3); }
+  select, input[type=date] { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; cursor: pointer; }
+  select:focus, input[type=date]:focus { border-color: var(--accent); }
+  option { background: var(--surface2); }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-l { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  .stat-v { font-size: 26px; font-weight: 300; color: var(--text); font-family: 'DM Mono', monospace; }
+
+  /* PERSON CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; transition: border-color .15s; }
+  .card.conflict { border-color: rgba(248,113,113,0.4); }
+  .card-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; }
+  .card-head:hover { background: rgba(255,255,255,0.02); }
+  .ava { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .pinfo { flex: 1; min-width: 0; }
+  .pname { font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+  .pmeta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+  .pill-free { background: var(--green-bg); color: var(--green); }
+  .pill-busy { background: var(--red-bg); color: var(--red); }
+  .pill-soon { background: var(--amber-bg); color: var(--amber); }
+  .pill-nodate { background: var(--surface2); color: var(--text3); }
+  .pill-conflict { background: var(--red-bg); color: var(--red); }
+  .chev { color: var(--text3); transition: transform .2s; flex-shrink: 0; }
+  .is-open .chev { transform: rotate(180deg); }
+
+  /* CARD BODY */
+  .card-body { display: none; border-top: 1px solid var(--border); }
+  .sec-label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; padding: 12px 18px 6px; display: flex; align-items: center; gap: 6px; }
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 18px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .row:last-child { border-bottom: none; }
+  .row.cr { background: rgba(248,113,113,0.04); }
+  .rdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .rdot.sq { border-radius: 2px; }
+  .rinfo { flex: 1; min-width: 0; }
+  .rname { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rmeta { color: var(--text3); font-size: 11px; margin-top: 2px; }
+  .rdates { color: var(--text3); font-size: 11px; white-space: nowrap; text-align: right; font-family: 'DM Mono', monospace; line-height: 1.6; }
+  .conflict-note { font-size: 11px; color: var(--red); display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; }
+  .estado-tag { font-size: 10px; padding: 1px 7px; border-radius: 4px; margin-left: 6px; display: inline-block; }
+  .del-btn { background: none; border: 1px solid var(--border2); border-radius: 6px; padding: 3px 7px; cursor: pointer; color: var(--red); font-size: 11px; margin-top: 2px; transition: all .15s; flex-shrink: 0; }
+  .del-btn:hover { background: var(--red-bg); border-color: var(--red); }
+
+  /* ADD TASK PANEL */
+  .add-panel { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; animation: slideIn .2s ease; }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  .add-panel h3 { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 16px; letter-spacing: -0.01em; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .fg { display: flex; flex-direction: column; gap: 5px; }
+  .fg label { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+  .fg input, .fg select, .fg textarea { background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--accent); }
+  .fg textarea { resize: vertical; min-height: 56px; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .btn-cancel { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 16px; font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .15s; }
+  .btn-cancel:hover { color: var(--text); border-color: var(--border2); }
+  .btn-save { display: flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 8px 18px; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+  .btn-save:hover { opacity: .85; }
+  .btn-save.saving { opacity: .6; pointer-events: none; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+  .ld { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text3); font-size: 14px; }
+
+  /* TOP ACTION */
+  .top-row { display: flex; align-items: center; margin-bottom: 24px; gap: 12px; }
+  .top-row h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.03em; flex: 1; }
+  .top-row h1 span { color: var(--text3); font-weight: 300; }
+  .btn-new { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; transition: all .15s; }
+  .btn-new:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .footnote { font-size: 11px; color: var(--text3); margin-top: 24px; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">griky <span>·</span> contenidistas</div>
+  <div class="spacer"></div>
+  <div class="nav-date" id="navDate"></div>
+  <button class="btn-refresh" onclick="loadAll()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.65 2.35A8 8 0 1 0 14 8" stroke-linecap="round"/><polyline points="14,2 14,6 10,6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Actualizar
+  </button>
+</nav>
+
+<main>
+
+  <!-- CONFIG -->
+  <div class="config-card" id="configCard" style="display:none">
+    <h3>Conexión Monday.com</h3>
+    <div class="config-row">
+      <input type="password" id="apiToken" placeholder="Pega tu API token de Monday.com aquí…" value="eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA"/>
+      <button class="btn-primary" onclick="loadAll()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v14M1 8h14" stroke-linecap="round"/></svg>
+        Conectar
+      </button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div id="appContent" style="display:none">
+    <!-- TOP ROW -->
+    <div class="top-row">
+      <h1>Disponibilidad <span>/ hoy</span></h1>
+      <button class="btn-new" onclick="togglePanel()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 1v14M1 8h14" stroke-linecap="round"/></svg>
+        Nueva tarea
+      </button>
+    </div>
+
+    <!-- ADD PANEL -->
+    <div class="add-panel" id="addPanel" style="display:none">
+      <h3>Agregar tarea adicional</h3>
+      <div class="form-grid">
+        <div class="fg"><label>Contenidista</label>
+          <select id="tPerson">
+            <option value="76161444">Claudia Carvajal</option>
+            <option value="101898081">Wendy Aldana</option>
+            <option value="76161510">Andrés Felipe Gallego</option>
+          </select></div>
+        <div class="fg"><label>Tipo de tarea</label>
+          <select id="tType">
+            <option>Ajuste de contenido</option><option>Revisión</option><option>Reunión</option>
+            <option>Corrección</option><option>Investigación</option><option>Otro</option>
+          </select></div>
+      </div>
+      <div class="form-grid full">
+        <div class="fg"><label>Descripción</label><textarea id="tDesc" placeholder="Describe la tarea…"></textarea></div>
+      </div>
+      <div class="form-grid">
+        <div class="fg"><label>Fecha inicio</label><input type="date" id="tStart" oninput="calcFin()"/></div>
+        <div class="fg"><label>Días hábiles</label><input type="number" id="tDays" min="1" max="120" placeholder="Ej: 5" oninput="calcFin()"/></div>
+      </div>
+      <div class="form-grid full">
+        <div class="fg"><label>DI que asigna</label>
+          <select id="tDI">
+            <option value="72722460">Jovanni Andrés Torres Viasús</option>
+            <option value="78900883">Mailliw Arcila</option>
+            <option value="90488485">Elena</option>
+            <option value="72722455">Natalia González Díaz</option>
+            <option value="72722461">Daniel Gonzalez A</option>
+            <option value="72722457">Melany Páez</option>
+            <option value="74324610">dianadorado</option>
+          </select></div>
+      </div>
+      <div id="finCalc" style="font-size:12px;color:#A78BFA;font-family:'DM Mono',monospace;margin-bottom:8px;padding:8px 0;display:none">
+        📅 Fecha fin estimada: <strong id="finCalcVal"></strong>
+      </div>
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="togglePanel()">Cancelar</button>
+        <button class="btn-save" id="btnSave" onclick="saveTask()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,8 6,13 15,3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Guardar en Monday
+        </button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Contenidistas</div><div class="stat-v">3</div></div>
+      <div class="stat"><div class="stat-l">Ocupados</div><div class="stat-v" id="sBusy" style="color:var(--red)">—</div></div>
+      <div class="stat"><div class="stat-l">Disponibles</div><div class="stat-v" id="sFree" style="color:var(--green)">—</div></div>
+      <div class="stat"><div class="stat-l">Conflictos</div><div class="stat-v" id="sConf" style="color:var(--amber)">—</div></div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+      <label>Fecha</label>
+      <input type="date" id="fDate" onchange="render()"/>
+      <label style="margin-left:8px">Persona</label>
+      <select id="fPerson" onchange="render()">
+        <option value="">Todos</option>
+        <option value="Claudia Carvajal">Claudia Carvajal</option>
+        <option value="Wendy Aldana">Wendy Aldana</option>
+        <option value="Andrés Felipe Gallego">Andrés Felipe Gallego</option>
+      </select>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Ocupado</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Disponible</div>
+      <div class="li"><div class="ld" style="background:var(--amber)"></div>Termina pronto</div>
+      <div class="li"><div class="ld" style="background:var(--text3)"></div>Sin fecha</div>
+      <div class="li"><div class="ld" style="background:var(--red);box-shadow:0 0 0 2px rgba(248,113,113,0.3)"></div>⚡ Conflicto</div>
+    </div>
+
+    <div id="dash"></div>
+
+    <p class="footnote">
+      Cursos ocultos: FINALIZADO · AJUSTADO-DI · AJUSTADO-CLIENTE · EN PAUSA · CANCELADO · NO APLICA<br/>
+      Tareas adicionales guardadas en el tablero <strong>TAREAS CONTENIDISTAS</strong> de Monday.com
+    </p>
+  </div>
+</main>
+
+<script>
+const API_TOKEN = "REEMPLAZA_AQUI_TU_TOKEN";
+const MASTER_BOARD = "9186901942";
+const TAREAS_BOARD = "18415328637";
+const EXCLUIR = new Set(["FINALIZADO","AJUSTADO - DI","AJUSTADO - CLIENTE","EN PAUSA","CANCELADO","NO APLICA","REQ. AJ. - CLIENTE","REQ. AJ. - DI"]);
+const PEOPLE_MAP = {"72722460":"Jovanni Andrés Torres Viasús","78900883":"Mailliw Arcila","90488485":"Elena"};
+const CONTENIDISTAS_IDS = {"Claudia Carvajal":"76161444","Wendy Aldana":"101898081","Andrés Felipe Gallego":"76161510"};
+const AVATARS = {
+  "Claudia Carvajal":      {bg:"#2D2540",color:"#A78BFA"},
+  "Wendy Aldana":          {bg:"#1A2E2A",color:"#34D399"},
+  "Andrés Felipe Gallego": {bg:"#2E2316",color:"#FBBF24"}
+};
+
+let CURSOS = [], TAREAS_MON = [];
+let expanded = {};
+
+// ─── API ───────────────────────────────────────────────
+function getToken(){ return "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA"; }
+
+async function mondayQuery(query, variables={}){
+  const r = await fetch('https://api.monday.com/v2',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':getToken(),'API-Version':'2024-01'},
+    body: JSON.stringify({query, variables})
+  });
+  const j = await r.json();
+  if(j.errors) throw new Error(j.errors[0].message);
+  return j.data;
+}
+
+// ─── LOAD ──────────────────────────────────────────────
+async function loadAll(){
+  setStatus('Conectando con Monday.com…','loading');
+  try {
+    await Promise.all([loadCursos(), loadTareas()]);
+    document.getElementById('appContent').style.display='block';
+    document.getElementById('fDate').value = today();
+    render();
+    setStatus('✓ Datos cargados correctamente','ok');
+    setTimeout(()=>setStatus('',''),3000);
+  } catch(e) {
+    setStatus('Error: '+e.message,'err');
+  }
+}
+
+async function loadCursos(){
+  const q = `{
+    boards(ids:[${MASTER_BOARD}]){
+      items_page(limit:500){
+        items {
+          id name
+          column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","color_mkqqfbk5"]){ id text }
+        }
+      }
+    }
+  }`;
+  const d = await mondayQuery(q);
+  const items = d.boards[0].items_page.items;
+  CURSOS = [];
+  items.forEach(item=>{
+    const cv = {};
+    item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
+    const contenidista = cv['multiple_person_mkw37b6f'];
+    if(!contenidista) return;
+    // Match against our 3 contenidistas
+    const matched = ['Claudia Carvajal','Wendy Aldana','Andrés Felipe Gallego'].find(n=>contenidista.toLowerCase().includes(n.split(' ')[0].toLowerCase()));
+    if(!matched) return;
+    const estado = cv['color_mkqqfbk5']||'';
+    CURSOS.push({
+      p: matched,
+      curso: item.name,
+      cliente: cv['text_mkrane1']||'—',
+      di: cv['multiple_person_mkqs1fc4']||'—',
+      inicio: cv['date_mkxepszr']||null,
+      finStr: cv['formula_mkxe4s9w']||'',
+      estado
+    });
+  });
+}
+
+async function loadTareas(){
+  const q = `{
+    boards(ids:[${TAREAS_BOARD}]){
+      items_page(limit:200){
+        items {
+          id name
+          column_values(ids:["multiple_person_mm3s7dtr","color_mm3s84df","long_text_mm3s1q5c","date_mm3s2d7g","date_mm3sg4nk","multiple_person_mm3s7vtr"]){ id text }
+        }
+      }
+    }
+  }`;
+  const d = await mondayQuery(q);
+  const items = d.boards[0].items_page.items;
+  TAREAS_MON = [];
+  items.forEach(item=>{
+    const cv = {};
+    item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
+    const contenidista = cv['multiple_person_mm3s7dtr'];
+    if(!contenidista) return;
+    const matched = ['Claudia Carvajal','Wendy Aldana','Andrés Felipe Gallego'].find(n=>contenidista.toLowerCase().includes(n.split(' ')[0].toLowerCase()));
+    if(!matched) return;
+    TAREAS_MON.push({
+      id: item.id,
+      p: matched,
+      desc: item.name,
+      tipo: cv['color_mm3s84df']||'Tarea',
+      inicio: cv['date_mm3s2d7g']||null,
+      fin: cv['date_mm3sg4nk']||null,
+      di: cv['multiple_person_mm3s7vtr']||'—'
+    });
+  });
+}
+
+// ─── SAVE TASK TO MONDAY ──────────────────────────────
+// Festivos Colombia (lista base ampliada)
+const FESTIVOS_CO = new Set([
+  '2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03',
+  '2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29',
+  '2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02',
+  '2026-11-16','2026-12-08','2026-12-25',
+  '2025-01-01','2025-01-06','2025-03-24','2025-04-17','2025-04-18',
+  '2025-05-01','2025-06-02','2025-06-23','2025-06-30','2025-07-20',
+  '2025-08-07','2025-08-18','2025-10-13','2025-11-03','2025-11-17',
+  '2025-12-08','2025-12-25'
+]);
+
+function esHabil(d){
+  const dow = d.getDay();
+  if(dow===0||dow===6) return false;
+  const key = d.toISOString().split('T')[0];
+  return !FESTIVOS_CO.has(key);
+}
+
+function addDiasHabiles(startStr, dias){
+  if(!startStr||!dias||dias<1) return null;
+  let d = new Date(startStr+'T00:00:00');
+  let count = 0;
+  while(count < dias){
+    d.setDate(d.getDate()+1);
+    if(esHabil(d)) count++;
+  }
+  return d;
+}
+
+function calcFin(){
+  const start = document.getElementById('tStart').value;
+  const days = parseInt(document.getElementById('tDays').value);
+  const div = document.getElementById('finCalc');
+  const val = document.getElementById('finCalcVal');
+  if(start && days > 0){
+    const fin = addDiasHabiles(start, days);
+    if(fin){
+      val.textContent = fin.toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'long',year:'numeric'});
+      div.style.display='block';
+    }
+  } else {
+    div.style.display='none';
+  }
+}
+
+async function saveTask(){
+  const personSel = document.getElementById('tPerson');
+  const personId = personSel.value;
+  const personName = personSel.options[personSel.selectedIndex].text;
+  const tipo = document.getElementById('tType').value;
+  const desc = document.getElementById('tDesc').value.trim() || tipo;
+  const inicio = document.getElementById('tStart').value || null;
+  const dias = parseInt(document.getElementById('tDays').value)||0;
+  const finDate = inicio && dias > 0 ? addDiasHabiles(inicio, dias) : null;
+  const fin = finDate ? finDate.toISOString().split('T')[0] : null;
+  const diId = document.getElementById('tDI').value;
+
+  const btn = document.getElementById('btnSave');
+  btn.classList.add('saving');
+  btn.textContent = 'Guardando…';
+
+  try {
+    const colVals = JSON.stringify({
+      "multiple_person_mm3s7dtr": {"personsAndTeams":[{"id":personId,"kind":"person"}]},
+      "color_mm3s84df": {"label": tipo},
+      "long_text_mm3s1q5c": desc,
+      ...(inicio ? {"date_mm3s2d7g":{"date":inicio}} : {}),
+      ...(fin ? {"date_mm3sg4nk":{"date":fin}} : {}),
+      "multiple_person_mm3s7vtr": {"personsAndTeams":[{"id":diId,"kind":"person"}]}
+    });
+
+    const mutation = `mutation { create_item(board_id:${TAREAS_BOARD}, item_name:"${desc.replace(/"/g,"'")}", column_values:${JSON.stringify(colVals)}) { id } }`;
+    await mondayQuery(mutation);
+
+    // Reset form
+    document.getElementById('tDesc').value='';
+    document.getElementById('tStart').value='';
+    document.getElementById('tDays').value='';
+    document.getElementById('finCalc').style.display='none';
+    togglePanel();
+
+    // Reload tareas and re-render
+    await loadTareas();
+    expanded['c_'+personName.replace(/\W/g,'_')]=true;
+    render();
+  } catch(e) {
+    alert('Error al guardar: '+e.message);
+  } finally {
+    btn.classList.remove('saving');
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,8 6,13 15,3" stroke-linecap="round" stroke-linejoin="round"/></svg>Guardar en Monday';
+  }
+}
+
+async function deleteTask(itemId, personName){
+  if(!confirm('¿Eliminar esta tarea de Monday?')) return;
+  try {
+    await mondayQuery(`mutation { delete_item(item_id:${itemId}) { id } }`);
+    await loadTareas();
+    render();
+  } catch(e) { alert('Error al eliminar: '+e.message); }
+}
+
+// ─── HELPERS ──────────────────────────────────────────
+function today(){ return new Date().toISOString().split('T')[0]; }
+function pd(s){ return s?new Date(s+'T00:00:00'):null; }
+function fmtS(d){ return d?d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'}):'—'; }
+function initials(n){ return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function parseFormula(s){
+  if(!s||!s.trim()) return null;
+  const months={
+    Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11,
+    Ene:0,Abr:3,Mai:4,Ago:7,Dic:11
+  };
+  const m=s.match(/([A-Za-z]+)\.?\s*(\d+)\.?\s*(\d{4})/);
+  if(!m) return null;
+  const mo=months[m[1]];
+  if(mo===undefined) return null;
+  // La fórmula de Monday tiene 1 día de desfase respecto a la fecha visible en el tablero
+  const d=new Date(parseInt(m[3]),mo,parseInt(m[2]));
+  d.setDate(d.getDate()+1);
+  return d;
+}
+function setStatus(msg,type){
+  const el=document.getElementById('statusMsg');
+  el.textContent=msg; el.className='status-msg'+(type?' '+type:'');
+}
+
+function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
+
+function overlaps(a1,a2,b1,b2){
+  if(!a1||!b1) return false;
+  const ae=a2||new Date(a1.getTime()+86400000*365);
+  const be=b2||new Date(b1.getTime()+86400000*365);
+  return a1<=be && ae>=b1;
+}
+
+function getStatus(inicio,finDate,ref){
+  const i=pd(inicio),e=finDate;
+  if(!i&&!e) return 'nodate';
+  if(i&&!e) return ref>=i?'busy':'free';
+  if(!i&&e) return ref<=e?'busy':'free';
+  if(ref<i||ref>e) return 'free';
+  return (e-ref)/86400000<=3?'partial':'busy';
+}
+function sColor(s){ return s==='busy'?'var(--red)':s==='free'?'var(--green)':s==='partial'?'var(--amber)':'var(--text3)'; }
+
+function nextAvail(person,ref){
+  const items=[...cursosActivos(person).map(c=>({ini:c.inicio,fin:parseFormula(c.finStr)})),
+               ...TAREAS_MON.filter(t=>t.p===person).map(t=>({ini:t.inicio,fin:pd(t.fin)}))];
+  const occ=items.filter(i=>{const s=getStatus(i.ini,i.fin,ref);return s==='busy'||s==='partial';});
+  if(!occ.length) return null;
+  let max=null;
+  occ.forEach(i=>{ if(i.fin&&(!max||i.fin>max)) max=i.fin; });
+  return max;
+}
+
+function getConflicts(person){
+  const cur=cursosActivos(person).map(c=>({key:c.curso,i:c.inicio,f:parseFormula(c.finStr)})).filter(x=>x.i||x.f);
+  const tar=TAREAS_MON.filter(t=>t.p===person&&(t.inicio||t.fin)).map(t=>({key:t.desc,i:t.inicio,f:pd(t.fin)}));
+  const all=[...cur,...tar];
+  const pairs=[];
+  for(let a=0;a<all.length;a++) for(let b=a+1;b<all.length;b++)
+    if(overlaps(pd(all[a].i),all[a].f,pd(all[b].i),all[b].f)) pairs.push([all[a].key,all[b].key]);
+  return pairs;
+}
+
+function estadoTag(e){
+  if(!e) return '';
+  const c={'EN CURSO':'background:var(--green-bg);color:var(--green)','ASIGNADO':'background:var(--blue-bg);color:var(--blue)','SIN INICIAR':'background:var(--surface2);color:var(--text3)'};
+  return `<span class="estado-tag" style="${c[e]||'background:var(--surface2);color:var(--text3)'}">${e}</span>`;
+}
+
+function pillHtml(overall, nxt, hasConflict){
+  if(hasConflict) return `<span class="pill pill-conflict">⚡ Conflicto</span>`;
+  if(overall==='free') return `<span class="pill pill-free">Disponible ahora</span>`;
+  if(overall==='nodate') return `<span class="pill pill-nodate">Sin fechas</span>`;
+  const label=overall==='partial'?'Termina pronto':'Ocupado';
+  const cls=overall==='partial'?'pill-soon':'pill-busy';
+  if(nxt){ const d=new Date(nxt.getTime()+86400000); return `<span class="pill ${cls}">${label} · libre ${fmtS(d)}</span>`; }
+  return `<span class="pill pill-busy">${label} · sin fecha fin</span>`;
+}
+
+// ─── RENDER ────────────────────────────────────────────
+function render(){
+  const dateVal=document.getElementById('fDate').value||today();
+  const ref=new Date(dateVal+'T00:00:00');
+  const fP=document.getElementById('fPerson').value;
+  document.querySelector('.top-row h1').innerHTML = `Disponibilidad <span>/ ${new Date(dateVal+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'long'})}</span>`;
+
+  const PEOPLE=fP?[fP]:['Claudia Carvajal','Wendy Aldana','Andrés Felipe Gallego'];
+  let busyN=0,freeN=0,confN=0;
+
+  const cards=PEOPLE.map(name=>{
+    const cursos=cursosActivos(name);
+    const tareas=TAREAS_MON.filter(t=>t.p===name);
+    const conflicts=getConflicts(name);
+    const hasConflict=conflicts.length>0;
+    const confKeys=new Set(conflicts.flat());
+    const allSt=[...cursos.map(c=>getStatus(c.inicio,parseFormula(c.finStr),ref)),...tareas.map(t=>getStatus(t.inicio,pd(t.fin),ref))];
+    const hasBusy=allSt.includes('busy'),hasPart=allSt.includes('partial');
+    const overall=allSt.length===0?'free':hasBusy?'busy':hasPart?'partial':allSt.every(s=>s==='nodate')?'nodate':'free';
+    const nxt=(overall==='busy'||overall==='partial')?nextAvail(name,ref):null;
+    if(hasConflict) confN++;
+    if(overall==='busy'||overall==='partial') busyN++; else freeN++;
+
+    const av=AVATARS[name];
+    const id='c_'+name.replace(/\W/g,'_');
+    const isOpen=!!expanded[id];
+
+    const cRows=cursos.map(c=>{
+      const fd=parseFormula(c.finStr);
+      const s=getStatus(c.inicio,fd,ref);
+      const isCr=confKeys.has(c.curso);
+      const w=conflicts.filter(([a,b])=>a===c.curso||b===c.curso).map(([a,b])=>a===c.curso?b:a);
+      return `<div class="row${isCr?' cr':''}">
+        <div class="rdot" style="background:${isCr?'var(--red)':sColor(s)}"></div>
+        <div class="rinfo">
+          <div class="rname">${c.curso}${estadoTag(c.estado)}</div>
+          <div class="rmeta">🏢 ${c.cliente} &nbsp;·&nbsp; 👤 DI: ${c.di}</div>
+          ${isCr?`<div class="conflict-note">⚠ Conflicto con: ${w.join(', ')}</div>`:''}
+        </div>
+        <div class="rdates">${fmtS(pd(c.inicio))}<br>→ ${fmtS(fd)}</div>
+      </div>`;
+    }).join('');
+
+    const tRows=tareas.map(t=>{
+      const fd=pd(t.fin);
+      const s=getStatus(t.inicio,fd,ref);
+      const isCr=confKeys.has(t.desc);
+      const w=conflicts.filter(([a,b])=>a===t.desc||b===t.desc).map(([a,b])=>a===t.desc?b:a);
+      return `<div class="row${isCr?' cr':''}">
+        <div class="rdot sq" style="background:${isCr?'var(--red)':sColor(s)}"></div>
+        <div class="rinfo">
+          <div class="rname">${t.desc} <span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:5px">${t.tipo}</span></div>
+          <div class="rmeta">👤 Asignado por: ${t.di}</div>
+          ${isCr?`<div class="conflict-note">⚠ Conflicto con: ${w.join(', ')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="rdates">${fmtS(pd(t.inicio))}<br>→ ${fmtS(fd)}</div>
+          <button class="del-btn" onclick="deleteTask('${t.id}','${name}')">✕ Eliminar</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card${hasConflict?' conflict':''}" id="${id}">
+      <div class="card-head${isOpen?' is-open':''}" onclick="toggle('${id}')">
+        <div class="ava" style="background:${av.bg};color:${av.color}">${initials(name)}</div>
+        <div class="pinfo">
+          <div class="pname">${name}</div>
+          <div class="pmeta">${cursos.length} cursos activos · ${tareas.length} tareas adicionales</div>
+        </div>
+        ${pillHtml(overall,nxt,hasConflict)}
+        <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4,6 8,10 12,6"/></svg>
+      </div>
+      <div class="card-body" style="display:${isOpen?'block':'none'}">
+        ${cursos.length>0?`<div class="sec-label"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h4"/></svg>Cursos activos (Monday)</div>${cRows}`:'<div style="padding:12px 18px;font-size:12px;color:var(--text3);font-style:italic">Sin cursos activos en este momento.</div>'}
+        ${tareas.length>0?`<div class="sec-label" style="margin-top:4px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 7,9 13,3"/><path d="M3 11h10"/></svg>Tareas adicionales</div>${tRows}`:''}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('sBusy').textContent=busyN;
+  document.getElementById('sFree').textContent=freeN;
+  document.getElementById('sConf').textContent=confN;
+  document.getElementById('dash').innerHTML=cards.join('')||`<div class="empty">Sin resultados para los filtros seleccionados.</div>`;
+}
+
+function toggle(id){ expanded[id]=!expanded[id]; render(); }
+function togglePanel(){
+  const p=document.getElementById('addPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+// NAV DATE
+const navDate=document.getElementById('navDate');
+function updateDate(){ navDate.textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); }
+updateDate(); setInterval(updateDate,60000);
+
+// INICIO AUTOMÁTICO
+document.getElementById('configCard').style.display='none';
+loadAll();
+</script>
+</body>
+</html>
