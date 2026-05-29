@@ -362,52 +362,56 @@ async function loadAll(){
 }
 
 async function loadCursos(){
-  const q = `{
-    boards(ids:[${MASTER_BOARD}]){
-      items_page(limit:500){
-        items {
-          id name
-          column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text }
+  CURSOS = [];
+  let cursor = null;
+  let hasMore = true;
+  const MATCH_KEYS = {
+    'Claudia Carvajal': ['claudia carvajal', 'carvajal'],
+    'Wendy Aldana': ['wendy aldana', 'wendy'],
+    'Andrés Felipe Gallego': ['andrés felipe gallego', 'felipe gallego', 'gallego hurtado', 'gallego']
+  };
+  while(hasMore){
+    const cursorParam = cursor ? `, after:"${cursor}"` : '';
+    const q = `{
+      boards(ids:[${MASTER_BOARD}]){
+        items_page(limit:100${cursorParam}){
+          cursor
+          items {
+            id name
+            column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text }
+          }
         }
       }
-    }
-  }`;
-  const d = await mondayQuery(q);
-  const items = d.boards[0].items_page.items;
-  CURSOS = [];
-  items.forEach(item=>{
-    const cv = {};
-    item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
-    const contenidista = cv['multiple_person_mkw37b6f'];
-    if(!contenidista) return;
-    // Match against our 3 contenidistas
-    // Usar palabras más distintivas para evitar falsos positivos
-    const MATCH_KEYS = {
-      'Claudia Carvajal': ['claudia carvajal', 'carvajal'],
-      'Wendy Aldana': ['wendy aldana', 'wendy'],
-      'Andrés Felipe Gallego': ['andrés felipe gallego', 'felipe gallego', 'gallego hurtado', 'gallego']
-    };
-    const contenidistaLow = contenidista.toLowerCase();
-    const matched = Object.keys(MATCH_KEYS).find(name =>
-      MATCH_KEYS[name].some(key => contenidistaLow.includes(key)) &&
-      // Excluir si contiene "jovanni" o "torres" (es el DI, no el contenidista)
-      !contenidistaLow.includes('jovanni') && !contenidistaLow.includes('torres viasús')
-    );
-    if(!matched) return;
-    const estado = cv['color_mkqqfbk5']||'';
-    // Usar date_mkxp7qj9 si existe, si no parsear formula_mkxe4s9w
-    const finDirect = cv['date_mkxp7qj9']||null;
-    CURSOS.push({
-      p: matched,
-      curso: item.name,
-      cliente: cv['text_mkrane1']||'—',
-      di: cv['multiple_person_mkqs1fc4']||'—',
-      inicio: cv['date_mkxepszr']||null,
-      finStr: cv['formula_mkxe4s9w']||'',
-      finDirect: finDirect,
-      estado
+    }`;
+    const d = await mondayQuery(q);
+    const page = d.boards[0].items_page;
+    cursor = page.cursor || null;
+    hasMore = !!cursor;
+    page.items.forEach(item=>{
+      const cv = {};
+      item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
+      const contenidista = cv['multiple_person_mkw37b6f'];
+      if(!contenidista) return;
+      const contenidistaLow = contenidista.toLowerCase();
+      const matched = Object.keys(MATCH_KEYS).find(name =>
+        MATCH_KEYS[name].some(key => contenidistaLow.includes(key)) &&
+        !contenidistaLow.includes('jovanni') && !contenidistaLow.includes('torres viasús')
+      );
+      if(!matched) return;
+      const estado = cv['color_mkqqfbk5']||'';
+      const finDirect = cv['date_mkxp7qj9']||null;
+      CURSOS.push({
+        p: matched,
+        curso: item.name,
+        cliente: cv['text_mkrane1']||'—',
+        di: cv['multiple_person_mkqs1fc4']||'—',
+        inicio: cv['date_mkxepszr']||null,
+        finStr: cv['formula_mkxe4s9w']||'',
+        finDirect: finDirect,
+        estado
+      });
     });
-  });
+  }
 }
 
 async function loadTareas(){
