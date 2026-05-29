@@ -562,10 +562,8 @@ function setStatus(msg,type){
 }
 
 function getFinDate(c){
-  // Primero intentar fecha directa de Monday
   if(c.finDirect) return new Date(c.finDirect+'T00:00:00');
-  // Si no, parsear la fórmula de texto y sumar 1 día
-  return getFinDate(c);
+  return parseFormula(c.finStr);
 }
 
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
