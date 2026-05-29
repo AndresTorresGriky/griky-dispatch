@@ -610,6 +610,16 @@ function getStatus(inicio,finDate,ref){
 }
 function sColor(s){ return s==='busy'?'var(--red)':s==='free'?'var(--green)':s==='partial'?'var(--amber)':'var(--text3)'; }
 
+function nextHabil(d){
+  // Avanza al siguiente día hábil (lunes si cae en fin de semana, salta festivos)
+  if(!d) return null;
+  let next = new Date(d.getTime()+86400000);
+  while(!esHabil(next)){
+    next = new Date(next.getTime()+86400000);
+  }
+  return next;
+}
+
 function nextAvail(person,ref){
   const items=[...cursosActivos(person).map(c=>({ini:c.inicio,fin:getFinDate(c)})),
                ...TAREAS_MON.filter(t=>t.p===person).map(t=>({ini:t.inicio,fin:pd(t.fin)}))];
@@ -617,7 +627,8 @@ function nextAvail(person,ref){
   if(!occ.length) return null;
   let max=null;
   occ.forEach(i=>{ if(i.fin&&(!max||i.fin>max)) max=i.fin; });
-  return max;
+  // Devolver el siguiente día hábil después de la última entrega
+  return max ? nextHabil(max) : null;
 }
 
 function getConflicts(person){
@@ -642,7 +653,7 @@ function pillHtml(overall, nxt, hasConflict){
   if(overall==='nodate') return `<span class="pill pill-nodate">Sin fechas</span>`;
   const label=overall==='partial'?'Termina pronto':'Ocupado';
   const cls=overall==='partial'?'pill-soon':'pill-busy';
-  if(nxt){ const d=new Date(nxt.getTime()+86400000); return `<span class="pill ${cls}">${label} · libre ${fmtS(d)}</span>`; }
+  if(nxt){ return `<span class="pill ${cls}">${label} · libre ${fmtS(nxt)}</span>`; }
   return `<span class="pill pill-busy">${label} · sin fecha fin</span>`;
 }
 
