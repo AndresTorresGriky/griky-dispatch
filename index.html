@@ -320,6 +320,7 @@ async function checkLogin(){
   if(hash === correctHash){
     document.getElementById('loginScreen').style.display='none';
     sessionStorage.setItem('griky_auth','1');
+    loadAll();
   } else {
     document.getElementById('loginErr').textContent='Contraseña incorrecta. Inténtalo de nuevo.';
     document.getElementById('loginPass').value='';
@@ -330,6 +331,8 @@ async function checkLogin(){
 // Verificar si ya está autenticado en esta sesión
 if(sessionStorage.getItem('griky_auth')==='1'){
   document.getElementById('loginScreen').style.display='none';
+  // Ya autenticado: cargar datos automáticamente
+  window.addEventListener('DOMContentLoaded', ()=>{});
 }
 
 // ─── API ───────────────────────────────────────────────
@@ -737,9 +740,11 @@ const navDate=document.getElementById('navDate');
 function updateDate(){ navDate.textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); }
 updateDate(); setInterval(updateDate,60000);
 
-// INICIO AUTOMÁTICO
+// INICIO AUTOMÁTICO: solo si ya está autenticado
 document.getElementById('configCard').style.display='none';
-loadAll();
+if(sessionStorage.getItem('griky_auth')==='1'){
+  loadAll();
+}
 </script>
 </body>
 </html>
