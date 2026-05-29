@@ -371,24 +371,9 @@ async function loadCursos(){
     'Wendy Aldana': ['wendy aldana', 'wendy'],
     'Andrés Felipe Gallego': ['andrés felipe gallego', 'felipe gallego', 'gallego hurtado', 'gallego']
   };
-  while(hasMore){
-    const cursorParam = cursor ? `, after:"${cursor}"` : '';
-    const q = `{
-      boards(ids:[${MASTER_BOARD}]){
-        items_page(limit:100${cursorParam}){
-          cursor
-          items {
-            id name
-            column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text }
-          }
-        }
-      }
-    }`;
-    const d = await mondayQuery(q);
-    const page = d.boards[0].items_page;
-    cursor = page.cursor || null;
-    hasMore = !!cursor;
-    page.items.forEach(item=>{
+
+  const processItems = (items) => {
+    items.forEach(item=>{
       const cv = {};
       item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
       const contenidista = cv['multiple_person_mkw37b6f'];
@@ -412,6 +397,25 @@ async function loadCursos(){
         estado
       });
     });
+  };
+
+  while(hasMore){
+    let q;
+    if(cursor){
+      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } }`;
+      const d = await mondayQuery(q);
+      const page = d.next_items_page;
+      cursor = page.cursor || null;
+      hasMore = !!cursor;
+      processItems(page.items);
+    } else {
+      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } } }`;
+      const d = await mondayQuery(q);
+      const page = d.boards[0].items_page;
+      cursor = page.cursor || null;
+      hasMore = !!cursor;
+      processItems(page.items);
+    }
   }
 }
 
