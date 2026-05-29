@@ -328,12 +328,7 @@ async function checkLogin(){
   }
 }
 
-// Verificar si ya está autenticado en esta sesión
-if(sessionStorage.getItem('griky_auth')==='1'){
-  document.getElementById('loginScreen').style.display='none';
-  // Ya autenticado: cargar datos automáticamente
-  window.addEventListener('DOMContentLoaded', ()=>{});
-}
+// Verificar si ya está autenticado en esta sesión - se maneja al final
 
 // ─── API ───────────────────────────────────────────────
 function getToken(){ return "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA"; }
@@ -351,16 +346,19 @@ async function mondayQuery(query, variables={}){
 
 // ─── LOAD ──────────────────────────────────────────────
 async function loadAll(){
-  setStatus('Conectando con Monday.com…','loading');
+  // Mostrar appContent con mensaje de carga
+  document.getElementById('appContent').style.display='block';
+  document.getElementById('dash').innerHTML='<div class="empty" style="color:var(--text2)">Cargando datos desde Monday...</div>';
   try {
-    await Promise.all([loadCursos(), loadTareas()]);
-    document.getElementById('appContent').style.display='block';
+    await loadCursos();
+    await loadTareas();
     document.getElementById('fDate').value = today();
     render();
     setStatus('✓ Datos cargados correctamente','ok');
     setTimeout(()=>setStatus('',''),3000);
   } catch(e) {
-    setStatus('Error: '+e.message,'err');
+    document.getElementById('dash').innerHTML=`<div class="empty" style="color:var(--red)">❌ Error al cargar: ${e.message}<br><small style="color:var(--text3)">Verifica que el token de Monday sea válido.</small></div>`;
+    console.error('loadAll error:', e);
   }
 }
 
@@ -740,10 +738,14 @@ const navDate=document.getElementById('navDate');
 function updateDate(){ navDate.textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); }
 updateDate(); setInterval(updateDate,60000);
 
-// INICIO AUTOMÁTICO: solo si ya está autenticado
+// INICIO AUTOMÁTICO
 document.getElementById('configCard').style.display='none';
 if(sessionStorage.getItem('griky_auth')==='1'){
+  document.getElementById('loginScreen').style.display='none';
   loadAll();
+} else {
+  // Mostrar login y esperar
+  document.getElementById('loginScreen').style.display='flex';
 }
 </script>
 </body>
