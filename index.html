@@ -381,7 +381,18 @@ async function loadCursos(){
     const contenidista = cv['multiple_person_mkw37b6f'];
     if(!contenidista) return;
     // Match against our 3 contenidistas
-    const matched = ['Claudia Carvajal','Wendy Aldana','Andrés Felipe Gallego'].find(n=>contenidista.toLowerCase().includes(n.split(' ')[0].toLowerCase()));
+    // Usar palabras más distintivas para evitar falsos positivos
+    const MATCH_KEYS = {
+      'Claudia Carvajal': ['claudia carvajal', 'carvajal'],
+      'Wendy Aldana': ['wendy aldana', 'wendy'],
+      'Andrés Felipe Gallego': ['andrés felipe gallego', 'felipe gallego', 'gallego hurtado', 'gallego']
+    };
+    const contenidistaLow = contenidista.toLowerCase();
+    const matched = Object.keys(MATCH_KEYS).find(name =>
+      MATCH_KEYS[name].some(key => contenidistaLow.includes(key)) &&
+      // Excluir si contiene "jovanni" o "torres" (es el DI, no el contenidista)
+      !contenidistaLow.includes('jovanni') && !contenidistaLow.includes('torres viasús')
+    );
     if(!matched) return;
     const estado = cv['color_mkqqfbk5']||'';
     // Usar date_mkxp7qj9 si existe, si no parsear formula_mkxe4s9w
@@ -418,7 +429,18 @@ async function loadTareas(){
     item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
     const contenidista = cv['multiple_person_mm3s7dtr'];
     if(!contenidista) return;
-    const matched = ['Claudia Carvajal','Wendy Aldana','Andrés Felipe Gallego'].find(n=>contenidista.toLowerCase().includes(n.split(' ')[0].toLowerCase()));
+    // Usar palabras más distintivas para evitar falsos positivos
+    const MATCH_KEYS = {
+      'Claudia Carvajal': ['claudia carvajal', 'carvajal'],
+      'Wendy Aldana': ['wendy aldana', 'wendy'],
+      'Andrés Felipe Gallego': ['andrés felipe gallego', 'felipe gallego', 'gallego hurtado', 'gallego']
+    };
+    const contenidistaLow = contenidista.toLowerCase();
+    const matched = Object.keys(MATCH_KEYS).find(name =>
+      MATCH_KEYS[name].some(key => contenidistaLow.includes(key)) &&
+      // Excluir si contiene "jovanni" o "torres" (es el DI, no el contenidista)
+      !contenidistaLow.includes('jovanni') && !contenidistaLow.includes('torres viasús')
+    );
     if(!matched) return;
     TAREAS_MON.push({
       id: item.id,
@@ -543,18 +565,12 @@ function fmtS(d){ return d?d.toLocaleDateString('es-CO',{day:'2-digit',month:'sh
 function initials(n){ return n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function parseFormula(s){
   if(!s||!s.trim()) return null;
-  const months={
-    Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11,
-    Ene:0,Abr:3,Mai:4,Ago:7,Dic:11
-  };
-  const m=s.match(/([A-Za-z]+)\.?\s*(\d+)\.?\s*(\d{4})/);
+  const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const m=s.match(/(\w+)\.\s*(\d+)\.\s*(\d{4})/);
   if(!m) return null;
   const mo=months[m[1]];
   if(mo===undefined) return null;
-  // La fórmula de Monday tiene 1 día de desfase respecto a la fecha visible en el tablero
-  const d=new Date(parseInt(m[3]),mo,parseInt(m[2]));
-  d.setDate(d.getDate()+1);
-  return d;
+  return new Date(parseInt(m[3]),mo,parseInt(m[2]));
 }
 function setStatus(msg,type){
   const el=document.getElementById('statusMsg');
