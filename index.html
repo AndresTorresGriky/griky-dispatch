@@ -620,21 +620,32 @@ function nextHabil(d){
 }
 
 function nextAvail(person, ref){
-  // Tomar TODOS los ítems con fecha (no solo los ocupados en ref)
-  const items = [
-    ...cursosActivos(person).map(c=>({fin:getFinDate(c)})),
-    ...TAREAS_MON.filter(t=>t.p===person).map(t=>({fin:pd(t.fin)}))
-  ].filter(i=>i.fin);
+  // Tomar todos los ítems activos o futuros respecto a ref
+  // Un ítem es relevante si su fecha fin es >= ref (aún no ha terminado)
+  const cursos = cursosActivos(person).map(c=>({
+    ini: pd(c.inicio),
+    fin: getFinDate(c)
+  }));
+  const tareas = TAREAS_MON.filter(t=>t.p===person).map(t=>({
+    ini: pd(t.inicio),
+    fin: pd(t.fin)
+  }));
+  const allItems = [...cursos, ...tareas];
 
-  if(!items.length) return null;
+  // Filtrar ítems que no han terminado todavía (fin >= ref) o que no tienen fin definido pero tienen inicio >= hoy
+  const relevant = allItems.filter(i => {
+    if(i.fin && i.fin >= ref) return true;
+    if(!i.fin && i.ini && i.ini >= ref) return true;
+    return false;
+  });
 
-  // La disponibilidad real es el día hábil siguiente a la fecha de entrega MÁS LEJANA
-  // entre todos los ítems que tienen inicio <= max y fin >= ref
-  // Es decir: encontrar el fin más tardío de todos los ítems activos o futuros
-  const allFins = items.map(i=>i.fin).filter(Boolean);
-  if(!allFins.length) return null;
+  if(!relevant.length) return null;
 
-  const maxFin = allFins.reduce((a,b)=>a>b?a:b);
+  // Encontrar la fecha de fin más lejana
+  const fins = relevant.map(i=>i.fin).filter(Boolean);
+  if(!fins.length) return null;
+
+  const maxFin = fins.reduce((a,b)=>a>b?a:b);
   return nextHabil(maxFin);
 }
 
