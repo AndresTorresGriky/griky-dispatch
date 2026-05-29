@@ -611,7 +611,6 @@ function getStatus(inicio,finDate,ref){
 function sColor(s){ return s==='busy'?'var(--red)':s==='free'?'var(--green)':s==='partial'?'var(--amber)':'var(--text3)'; }
 
 function nextHabil(d){
-  // Avanza al siguiente día hábil (lunes si cae en fin de semana, salta festivos)
   if(!d) return null;
   let next = new Date(d.getTime()+86400000);
   while(!esHabil(next)){
@@ -620,15 +619,23 @@ function nextHabil(d){
   return next;
 }
 
-function nextAvail(person,ref){
-  const items=[...cursosActivos(person).map(c=>({ini:c.inicio,fin:getFinDate(c)})),
-               ...TAREAS_MON.filter(t=>t.p===person).map(t=>({ini:t.inicio,fin:pd(t.fin)}))];
-  const occ=items.filter(i=>{const s=getStatus(i.ini,i.fin,ref);return s==='busy'||s==='partial';});
-  if(!occ.length) return null;
-  let max=null;
-  occ.forEach(i=>{ if(i.fin&&(!max||i.fin>max)) max=i.fin; });
-  // Devolver el siguiente día hábil después de la última entrega
-  return max ? nextHabil(max) : null;
+function nextAvail(person, ref){
+  // Tomar TODOS los ítems con fecha (no solo los ocupados en ref)
+  const items = [
+    ...cursosActivos(person).map(c=>({fin:getFinDate(c)})),
+    ...TAREAS_MON.filter(t=>t.p===person).map(t=>({fin:pd(t.fin)}))
+  ].filter(i=>i.fin);
+
+  if(!items.length) return null;
+
+  // La disponibilidad real es el día hábil siguiente a la fecha de entrega MÁS LEJANA
+  // entre todos los ítems que tienen inicio <= max y fin >= ref
+  // Es decir: encontrar el fin más tardío de todos los ítems activos o futuros
+  const allFins = items.map(i=>i.fin).filter(Boolean);
+  if(!allFins.length) return null;
+
+  const maxFin = allFins.reduce((a,b)=>a>b?a:b);
+  return nextHabil(maxFin);
 }
 
 function getConflicts(person){
