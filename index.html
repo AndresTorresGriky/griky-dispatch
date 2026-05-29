@@ -693,7 +693,8 @@ function render(){
     const confKeys=new Set(conflicts.flat());
     const allSt=[...cursos.map(c=>getStatus(c.inicio,getFinDate(c),ref)),...tareas.map(t=>getStatus(t.inicio,pd(t.fin),ref))];
     const hasBusy=allSt.includes('busy'),hasPart=allSt.includes('partial');
-    const overall=allSt.length===0?'free':hasBusy?'busy':hasPart?'partial':allSt.every(s=>s==='nodate')?'nodate':'free';
+    // "Termina pronto" solo si NO hay ningún curso ocupado (busy) — si hay busy, mostrar ocupado
+    const overall=allSt.length===0?'free':hasBusy?'busy':hasPart&&!hasBusy?'partial':allSt.every(s=>s==='nodate')?'nodate':'free';
     const nxt=(overall==='busy'||overall==='partial')?nextAvail(name,ref):null;
     if(hasConflict) confN++;
     if(overall==='busy'||overall==='partial') busyN++; else freeN++;
