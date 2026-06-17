@@ -381,7 +381,11 @@ async function loadCursos(){
   const processItems = (items) => {
     items.forEach(item=>{
       const cv = {};
-      item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
+      const cvDisplay = {};
+      item.column_values.forEach(c=>{
+        cv[c.id] = c.text||'';
+        cvDisplay[c.id] = c.display_value||c.text||'';
+      });
       const contenidista = cv['multiple_person_mkw37b6f'];
       if(!contenidista) return;
       const contenidistaLow = contenidista.toLowerCase();
@@ -392,6 +396,8 @@ async function loadCursos(){
       if(!matched) return;
       const estado = cv['color_mkqqfbk5']||'';
       const finDirect = cv['date_mkxp7qj9']||null;
+      // CH: leer desde cv_raw que incluye text y value
+      const chVal = parseFloat(cvDisplay['formula_mktzr6jb'])||0;
       CURSOS.push({
         p: matched,
         curso: item.name,
@@ -400,7 +406,7 @@ async function loadCursos(){
         inicio: cv['date_mkxepszr']||null,
         finStr: cv['formula_mkxe4s9w']||'',
         finDirect: finDirect,
-        ch: parseFloat(cv['formula_mktzr6jb'])||0,
+        ch: chVal,
         estado
       });
     });
@@ -409,14 +415,14 @@ async function loadCursos(){
   while(hasMore){
     let q;
     if(cursor){
-      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text } } } }`;
+      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text display_value } } } }`;
       const d = await mondayQuery(q);
       const page = d.next_items_page;
       cursor = page.cursor || null;
       hasMore = !!cursor;
       processItems(page.items);
     } else {
-      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text } } } } }`;
+      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text display_value } } } } }`;
       const d = await mondayQuery(q);
       const page = d.boards[0].items_page;
       cursor = page.cursor || null;
