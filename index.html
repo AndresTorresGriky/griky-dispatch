@@ -151,6 +151,12 @@
   .btn-new:hover { border-color: var(--accent2); color: var(--accent2); }
 
   .footnote { font-size: 11px; color: var(--text3); margin-top: 24px; font-family: 'DM Mono', monospace; }
+
+  /* CAPACITY BAR */
+  .cap-block { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-right: 8px; flex-shrink: 0; }
+  .cap-bar-bg { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .cap-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+  .cap-label { font-size: 10px; color: var(--text3); text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -394,6 +400,7 @@ async function loadCursos(){
         inicio: cv['date_mkxepszr']||null,
         finStr: cv['formula_mkxe4s9w']||'',
         finDirect: finDirect,
+        ch: parseFloat(cv['formula_mktzr6jb'])||0,
         estado
       });
     });
@@ -402,14 +409,14 @@ async function loadCursos(){
   while(hasMore){
     let q;
     if(cursor){
-      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } }`;
+      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text } } } }`;
       const d = await mondayQuery(q);
       const page = d.next_items_page;
       cursor = page.cursor || null;
       hasMore = !!cursor;
       processItems(page.items);
     } else {
-      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } } }`;
+      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text } } } } }`;
       const d = await mondayQuery(q);
       const page = d.boards[0].items_page;
       cursor = page.cursor || null;
@@ -591,7 +598,31 @@ function getFinDate(c){
   return parseFormula(c.finStr);
 }
 
+// Capacidad máxima mensual en CH por contenidista
+const CAP_MAX = {
+  'Claudia Carvajal':       9.0,
+  'Wendy Aldana':           7.98,
+  'Andrés Felipe Gallego':  14.5
+};
+
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
+
+function capBar(name){
+  const cursos = cursosActivos(name);
+  const tareas = TAREAS_MON.filter(t=>t.p===name);
+  const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0);
+  const max = CAP_MAX[name] || 1;
+  const pct = totalCH / max * 100;
+  const pctCapped = Math.min(pct, 100);
+  const color = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
+  const labelColor = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--text3)';
+  return `<div class="cap-block">
+    <div class="cap-bar-bg" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100" aria-label="Capacidad ${name} ${pct.toFixed(0)}%">
+      <div class="cap-bar-fill" style="width:${pctCapped.toFixed(1)}%;background:${color}"></div>
+    </div>
+    <div class="cap-label" style="color:${labelColor}">${totalCH.toFixed(2)} / ${max} CH · ${pct.toFixed(0)}%</div>
+  </div>`;
+}
 
 function overlaps(a1,a2,b1,b2){
   if(!a1||!b1) return false;
@@ -745,6 +776,7 @@ function render(){
           <div class="pname">${name}</div>
           <div class="pmeta">${cursos.length} cursos activos · ${tareas.length} tareas adicionales</div>
         </div>
+        ${capBar(name)}
         ${pillHtml(overall,nxt,hasConflict)}
         <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4,6 8,10 12,6"/></svg>
       </div>
