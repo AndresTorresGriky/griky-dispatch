@@ -353,19 +353,9 @@ let expanded = {};
 
 
 // ─── LOGIN ─────────────────────────────────────────────
-const PWD_HASH = '9f4c8e7a2b1d6f3e5c0a9b8d7e6f4c3a2b1d0e9f8c7b6a5d4e3f2c1b0a9d8e7f';
-
-async function hashStr(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function checkLogin(){
+function checkLogin(){
   const pass = document.getElementById('loginPass').value;
-  const hash = await hashStr(pass);
-  // Comparar con hash de Griky@2026*
-  const correctHash = await hashStr('Griky@2026*');
-  if(hash === correctHash){
+  if(pass === 'Griky@2026*'){
     document.getElementById('loginScreen').style.display='none';
     sessionStorage.setItem('griky_auth','1');
     loadAll();
@@ -375,8 +365,6 @@ async function checkLogin(){
     document.getElementById('loginPass').focus();
   }
 }
-
-// Verificar si ya está autenticado en esta sesión - se maneja al final
 
 // ─── API ───────────────────────────────────────────────
 function getToken(){ return "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA"; }
