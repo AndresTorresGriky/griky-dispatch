@@ -615,8 +615,13 @@ const CAP_MAX = {
 
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
 
+// Para capacidad: excluir SOLO cancelado, en pausa y no aplica
+const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
+
+function cursosCap(name){ return CURSOS.filter(c=>c.p===name && !EXCLUIR_CAP.has(c.estado)); }
+
 function capBar(name){
-  const cursos = cursosActivos(name);
+  const cursos = cursosCap(name);
   const tareas = TAREAS_MON.filter(t=>t.p===name);
   const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0);
   const max = CAP_MAX[name] || 1;
