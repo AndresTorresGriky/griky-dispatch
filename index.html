@@ -618,11 +618,28 @@ function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.est
 // Para capacidad: excluir SOLO cancelado, en pausa y no aplica
 const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
 
-function cursosCap(name){ return CURSOS.filter(c=>c.p===name && !EXCLUIR_CAP.has(c.estado)); }
+function cursosCapMes(name, refDate){
+  // Solo cursos activos DURANTE el mes de la fecha de referencia
+  const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+  const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
+  return CURSOS.filter(c => {
+    if(c.p !== name) return false;
+    if(EXCLUIR_CAP.has(c.estado)) return false;
+    const ci = c.inicio ? new Date(c.inicio+'T00:00:00') : null;
+    const cf = getFinDate(c);
+    // Sin fechas: se incluye siempre (curso asignado sin fecha aún planificada)
+    if(!ci && !cf) return true;
+    // Con fechas: debe solapar con el mes
+    if(ci && cf) return ci <= mesEnd && cf >= mesStart;
+    if(ci && !cf) return ci <= mesEnd;
+    if(!ci && cf) return cf >= mesStart;
+    return false;
+  });
+}
 
 function capBar(name){
-  const cursos = cursosCap(name);
-  const tareas = TAREAS_MON.filter(t=>t.p===name);
+  const refDate = new Date((document.getElementById('fDate')?.value || new Date().toISOString().split('T')[0])+'T00:00:00');
+  const cursos = cursosCapMes(name, refDate);
   const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0);
   const max = CAP_MAX[name] || 1;
   const pct = totalCH / max * 100;
