@@ -150,6 +150,12 @@
   .btn-new { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; transition: all .15s; }
   .btn-new:hover { border-color: var(--accent2); color: var(--accent2); }
 
+  
+  /* CAPACITY BAR */
+  .cap-block { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-right: 8px; flex-shrink: 0; }
+  .cap-bar-bg { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .cap-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+  .cap-label { font-size: 10px; color: var(--text3); text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
   .footnote { font-size: 11px; color: var(--text3); margin-top: 24px; font-family: 'DM Mono', monospace; }
 
   /* EDIT ROW */
@@ -501,10 +507,10 @@ async function loadTareas(){
       p: matched,
       desc: item.name,
       tipo: cv['color_mm3s84df']||'Tarea',
+      estado: cv['color_mm4eby9n']||'Asignada',
       inicio: cv['date_mm3s2d7g']||null,
       fin: cv['date_mm3sg4nk']||null,
       di: cv['multiple_person_mm3s7vtr']||'—',
-      estado: cv['color_mm4eby9n']||'Asignada',
       ch: parseFloat(cv['numeric_mm4ee37d'])||0
     });
   });
@@ -577,6 +583,7 @@ async function saveTask(){
     const chInt = parseInt(document.getElementById('tChInt').value)||0;
     const chDec = parseInt(document.getElementById('tChDec').value)||0;
     const chVal = chInt + chDec/10;
+    const estadoVal = document.getElementById('tEstado').value;
 
     const colVals = JSON.stringify({
       "multiple_person_mm3s7dtr": {"personsAndTeams":[{"id":personId,"kind":"person"}]},
@@ -586,7 +593,7 @@ async function saveTask(){
       ...(fin ? {"date_mm3sg4nk":{"date":fin}} : {}),
       "multiple_person_mm3s7vtr": {"personsAndTeams":[{"id":diId,"kind":"person"}]},
       "numeric_mm4ee37d": chVal,
-      "color_mm4eby9n": {"label": document.getElementById('tEstado').value}
+      "color_mm4eby9n": {"label": estadoVal}
     });
 
     const mutation = `mutation { create_item(board_id:${TAREAS_BOARD}, item_name:"${desc.replace(/"/g,"'")}", column_values:${JSON.stringify(colVals)}) { id } }`;
@@ -596,9 +603,6 @@ async function saveTask(){
     document.getElementById('tDesc').value='';
     document.getElementById('tStart').value='';
     document.getElementById('tDays').value='';
-    document.getElementById('tChInt').value='0';
-    document.getElementById('tChDec').value='0';
-    document.getElementById('tEstado').value='Asignada';
     document.getElementById('finCalc').style.display='none';
     togglePanel();
 
@@ -654,13 +658,17 @@ const CAP_MAX = {
   'Andrés Felipe Gallego':  14.5
 };
 
+const CAP_MAX = {
+  'Claudia Carvajal':       9.0,
+  'Wendy Aldana':           7.98,
+  'Andrés Felipe Gallego':  14.5
+};
+
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
 
-// Para capacidad: excluir SOLO cancelado, en pausa y no aplica
 const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
 
 function cursosCapMes(name, refDate){
-  // Solo cursos activos DURANTE el mes de la fecha de referencia
   const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
   const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
   return CURSOS.filter(c => {
@@ -668,9 +676,7 @@ function cursosCapMes(name, refDate){
     if(EXCLUIR_CAP.has(c.estado)) return false;
     const ci = c.inicio ? new Date(c.inicio+'T00:00:00') : null;
     const cf = getFinDate(c);
-    // Sin fechas: se incluye siempre (curso asignado sin fecha aún planificada)
     if(!ci && !cf) return true;
-    // Con fechas: debe solapar con el mes
     if(ci && cf) return ci <= mesEnd && cf >= mesStart;
     if(ci && !cf) return ci <= mesEnd;
     if(!ci && cf) return cf >= mesStart;
@@ -699,6 +705,56 @@ function capBar(name){
   const tareas = tareasCapMes(name, refDate);
   const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0)
                 + tareas.reduce((s,t)=>s+(parseFloat(t.ch)||0),0);
+  const max = CAP_MAX[name] || 1;
+  const pct = totalCH / max * 100;
+  const pctCapped = Math.min(pct, 100);
+  const color = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
+  const labelColor = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--text3)';
+  return `<div class="cap-block">
+    <div class="cap-bar-bg" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
+      <div class="cap-bar-fill" style="width:${pctCapped.toFixed(1)}%;background:${color}"></div>
+    </div>
+    <div class="cap-label" style="color:${labelColor}">${totalCH.toFixed(2)} / ${max} CH · ${pct.toFixed(0)}%</div>
+  </div>`;
+}
+
+function estadoTareaStyle(e){
+  const s={
+    'Asignada':  'background:#E6F1FB;color:#185FA5',
+    'En curso':  'background:#E1F5EE;color:#0F6E56',
+    'En pausa':  'background:#FAEEDA;color:#854F0B',
+    'Cancelada': 'background:#FCEBEB;color:#A32D2D',
+    'Completada':'background:#EAF3DE;color:#3B6D11'
+  };
+  return s[e]||'background:var(--surface2);color:var(--text3)';
+}
+
+// Para capacidad: excluir SOLO cancelado, en pausa y no aplica
+const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
+
+function cursosCapMes(name, refDate){
+  // Solo cursos activos DURANTE el mes de la fecha de referencia
+  const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+  const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
+  return CURSOS.filter(c => {
+    if(c.p !== name) return false;
+    if(EXCLUIR_CAP.has(c.estado)) return false;
+    const ci = c.inicio ? new Date(c.inicio+'T00:00:00') : null;
+    const cf = getFinDate(c);
+    // Sin fechas: se incluye siempre (curso asignado sin fecha aún planificada)
+    if(!ci && !cf) return true;
+    // Con fechas: debe solapar con el mes
+    if(ci && cf) return ci <= mesEnd && cf >= mesStart;
+    if(ci && !cf) return ci <= mesEnd;
+    if(!ci && cf) return cf >= mesStart;
+    return false;
+  });
+}
+
+function capBar(name){
+  const refDate = new Date((document.getElementById('fDate')?.value || new Date().toISOString().split('T')[0])+'T00:00:00');
+  const cursos = cursosCapMes(name, refDate);
+  const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0);
   const max = CAP_MAX[name] || 1;
   const pct = totalCH / max * 100;
   const pctCapped = Math.min(pct, 100);
@@ -843,14 +899,13 @@ function render(){
       const s=getStatus(t.inicio,fd,ref);
       const isCr=confKeys.has(t.desc);
       const w=conflicts.filter(([a,b])=>a===t.desc||b===t.desc).map(([a,b])=>a===t.desc?b:a);
-      const chStr=t.ch>0?`<span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:5px">${parseFloat(t.ch).toFixed(1)} CH</span>`:'';
+      const chStr=t.ch>0?`<span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:4px">${parseFloat(t.ch).toFixed(1)} CH</span>`:'';
       const editFormId=`ef_${t.id}`;
-      const chI=Math.floor(t.ch||0), chD=Math.round(((t.ch||0)-Math.floor(t.ch||0))*10);
       return `<div class="row${isCr?' cr':''}" id="row_${t.id}">
         <div class="rdot sq" style="background:${isCr?'var(--red)':sColor(s)}"></div>
         <div class="rinfo">
           <div class="rname">${t.desc}
-            <span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:5px">${t.tipo}</span>
+            <span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:4px">${t.tipo}</span>
             ${chStr}
           </div>
           <div class="rmeta">
@@ -861,7 +916,7 @@ function render(){
         </div>
         <div style="display:flex;align-items:center;gap:4px">
           <div class="rdates" style="text-align:right">${fmtS(pd(t.inicio))}<br>→ ${fmtS(fd)}</div>
-          <button class="icon-btn" title="Editar" onclick="showEditRow('${t.id}','${t.desc}','${t.tipo}','${t.estado||\"Asignada\"}',${t.ch||0},'${t.inicio||''}','${t.fin||''}','${t.di}')">✏️</button>
+          <button class="icon-btn" title="Editar" onclick="showEditRow('${t.id}','${t.desc}','${t.tipo}','${t.estado||'Asignada'}',${t.ch||0},'${t.inicio||''}','${t.fin||''}','${t.di}')">✏️</button>
           <button class="icon-btn" title="Eliminar" onclick="deleteTask('${t.id}','${name}')">🗑️</button>
         </div>
       </div>
@@ -876,13 +931,14 @@ function render(){
           <div class="pmeta">${cursos.length} cursos activos · ${tareas.length} tareas adicionales</div>
         </div>
         ${capBar(name)}
+        ${capBar(name)}
         ${pillHtml(overall,nxt,hasConflict)}
         <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4,6 8,10 12,6"/></svg>
       </div>
       <div class="card-body" style="display:${isOpen?'block':'none'}">
         ${cursos.length>0?`<div class="sec-label"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h4"/></svg>Cursos activos (Monday)</div>${cRows}`:'<div style="padding:12px 18px;font-size:12px;color:var(--text3);font-style:italic">Sin cursos activos en este momento.</div>'}
         <div class="sec-label" style="margin-top:4px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 7,9 13,3"/><path d="M3 11h10"/></svg>Tareas adicionales</div>
-        ${tareas.length>0 ? tRows : '<div style="padding:6px 18px 8px;font-size:12px;color:var(--text3);font-style:italic">Sin tareas adicionales asignadas.</div>'}
+        ${tareas.length>0 ? tRows : '<div style="padding:6px 18px 8px;font-size:12px;color:var(--text3);font-style:italic">Sin tareas adicionales.</div>'}
       </div>
     </div>`;
   });
@@ -896,64 +952,52 @@ function render(){
 function showEditRow(id, desc, tipo, estado, ch, inicio, fin, di){
   const ef = document.getElementById('ef_'+id);
   if(!ef) return;
-  const chI = Math.floor(ch), chD = Math.round((ch - Math.floor(ch))*10);
-  const tipos = ['Ajuste de contenido','Revisión','Reunión','Corrección','Investigación','Otro'];
-  const estados = ['Asignada','En curso','En pausa','Cancelada','Completada'];
-  const estOpts = estados.map(e=>`<option${e===estado?' selected':''}>${e}</option>`).join('');
-  const tipoOpts = tipos.map(t=>`<option${t===tipo?' selected':''}>${t}</option>`).join('');
-  const intOpts = [...Array(11).keys()].map(i=>`<option${i===chI?' selected':''}>${i}</option>`).join('');
-  const decOpts = [...Array(10).keys()].map(i=>`<option${i===chD?' selected':''}>${i}</option>`).join('');
-  ef.innerHTML = `<div class="edit-row">
-    <input type="text" id="ed_desc_${id}" value="${desc}" style="flex:2;min-width:120px" placeholder="Descripción"/>
-    <select id="ed_tipo_${id}" style="flex:1">${tipoOpts}</select>
+  const chI=Math.floor(ch), chD=Math.round((ch-Math.floor(ch))*10);
+  const tipos=['Ajuste de contenido','Revisión','Reunión','Corrección','Investigación','Otro'];
+  const estados=['Asignada','En curso','En pausa','Cancelada','Completada'];
+  const tipoOpts=tipos.map(t=>`<option${t===tipo?' selected':''}>${t}</option>`).join('');
+  const estOpts=estados.map(e=>`<option${e===estado?' selected':''}>${e}</option>`).join('');
+  const intOpts=[...Array(11).keys()].map(i=>`<option${i===chI?' selected':''}>${i}</option>`).join('');
+  const decOpts=[...Array(10).keys()].map(i=>`<option${i===chD?' selected':''}>${i}</option>`).join('');
+  ef.innerHTML=`<div class="edit-row">
+    <input type="text" id="ed_desc_${id}" value="${desc}" style="flex:2;min-width:100px"/>
+    <select id="ed_tipo_${id}">${tipoOpts}</select>
     <select id="ed_est_${id}">${estOpts}</select>
-    <div class="ch-sel">
-      <select id="ed_chi_${id}">${intOpts}</select>
-      <span>.</span>
-      <select id="ed_chd_${id}">${decOpts}</select>
-      <span>CH</span>
-    </div>
+    <div class="ch-sel"><select id="ed_chi_${id}">${intOpts}</select><span>.</span><select id="ed_chd_${id}">${decOpts}</select><span>CH</span></div>
     <input type="date" id="ed_ini_${id}" value="${inicio}" style="color-scheme:dark"/>
     <input type="date" id="ed_fin_${id}" value="${fin}" style="color-scheme:dark"/>
     <div class="edit-btns">
-      <button class="btn-ok" onclick="updateTask('${id}')">✓ Guardar</button>
+      <button class="btn-ok" onclick="updateTask('${id}')">✓</button>
       <button class="btn-cancel-edit" onclick="hideEditRow('${id}')">✗</button>
     </div>
   </div>`;
   ef.style.display='block';
 }
 
-function hideEditRow(id){
-  const ef = document.getElementById('ef_'+id);
-  if(ef) ef.style.display='none';
-}
+function hideEditRow(id){ const ef=document.getElementById('ef_'+id); if(ef) ef.style.display='none'; }
 
 async function updateTask(id){
-  const desc = document.getElementById('ed_desc_'+id).value.trim();
-  const tipo = document.getElementById('ed_tipo_'+id).value;
-  const chI  = parseInt(document.getElementById('ed_chi_'+id).value)||0;
-  const chD  = parseInt(document.getElementById('ed_chd_'+id).value)||0;
-  const ch   = chI + chD/10;
-  const ini  = document.getElementById('ed_ini_'+id).value||null;
-  const fin  = document.getElementById('ed_fin_'+id).value||null;
-
+  const desc=document.getElementById('ed_desc_'+id).value.trim();
+  const tipo=document.getElementById('ed_tipo_'+id).value;
+  const est=document.getElementById('ed_est_'+id).value;
+  const chI=parseInt(document.getElementById('ed_chi_'+id).value)||0;
+  const chD=parseInt(document.getElementById('ed_chd_'+id).value)||0;
+  const ch=chI+chD/10;
+  const ini=document.getElementById('ed_ini_'+id).value||null;
+  const fin=document.getElementById('ed_fin_'+id).value||null;
   try {
-    const colVals = JSON.stringify({
-      "color_mm3s84df": {"label": tipo},
-      "long_text_mm3s1q5c": desc,
-      ...(ini ? {"date_mm3s2d7g":{"date":ini}} : {}),
-      ...(fin ? {"date_mm3sg4nk":{"date":fin}} : {}),
-      "numeric_mm4ee37d": ch,
-      "color_mm4eby9n": {"label": document.getElementById('ed_est_'+id).value}
+    const colVals=JSON.stringify({
+      "color_mm3s84df":{"label":tipo},
+      "color_mm4eby9n":{"label":est},
+      "numeric_mm4ee37d":ch,
+      ...(ini?{"date_mm3s2d7g":{"date":ini}}:{}),
+      ...(fin?{"date_mm3sg4nk":{"date":fin}}:{})
     });
-    await mondayQuery(`mutation { change_multiple_column_values(board_id:${TAREAS_BOARD}, item_id:${id}, column_values:${JSON.stringify(colVals)}) { id } }`);
-    if(desc){
-      await mondayQuery(`mutation { change_item_value(board_id:${TAREAS_BOARD}, item_id:${id}, column_id:"name", value:${JSON.stringify(JSON.stringify(desc))}) { id } }`);
-    }
+    await mondayQuery(`mutation{change_multiple_column_values(board_id:${TAREAS_BOARD},item_id:${id},column_values:${JSON.stringify(colVals)}){id}}`);
     hideEditRow(id);
     await loadTareas();
     render();
-  } catch(e){ alert('Error al actualizar: '+e.message); }
+  } catch(e){ alert('Error: '+e.message); }
 }
 
 function toggle(id){ expanded[id]=!expanded[id]; render(); }
@@ -966,6 +1010,15 @@ function togglePanel(){
 const navDate=document.getElementById('navDate');
 function updateDate(){ navDate.textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); }
 updateDate(); setInterval(updateDate,60000);
+
+// INICIO AUTOMÁTICO
+document.getElementById('configCard').style.display='none';
+if(sessionStorage.getItem('griky_auth')==='1'){
+  document.getElementById('loginScreen').style.display='none';
+  loadAll();
+} else {
+  document.getElementById('loginScreen').style.display='flex';
+}
 
 // INICIO AUTOMÁTICO
 document.getElementById('configCard').style.display='none';
