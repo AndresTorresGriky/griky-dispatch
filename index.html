@@ -658,12 +658,6 @@ const CAP_MAX = {
   'Andrés Felipe Gallego':  14.5
 };
 
-const CAP_MAX = {
-  'Claudia Carvajal':       9.0,
-  'Wendy Aldana':           7.98,
-  'Andrés Felipe Gallego':  14.5
-};
-
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
 
 const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
