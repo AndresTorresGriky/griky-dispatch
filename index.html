@@ -150,7 +150,33 @@
   .btn-new { display: flex; align-items: center; gap: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; transition: all .15s; }
   .btn-new:hover { border-color: var(--accent2); color: var(--accent2); }
 
+  
+  /* CAPACITY BAR */
+  .cap-block { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-right: 8px; flex-shrink: 0; }
+  .cap-bar-bg { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .cap-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+  .cap-label { font-size: 10px; color: var(--text3); text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
   .footnote { font-size: 11px; color: var(--text3); margin-top: 24px; font-family: 'DM Mono', monospace; }
+
+  /* EDIT ROW */
+  .edit-row { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 8px 18px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .edit-row input, .edit-row select { font-size:12px; padding:4px 8px; background:var(--bg); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-family:'DM Sans',sans-serif; }
+  .edit-row input[type=date] { color-scheme:dark; }
+  .edit-row input[type=number] { width:60px; }
+  .edit-row .ch-sel { display:flex; align-items:center; gap:4px; }
+  .edit-row .ch-sel select { width:52px; }
+  .edit-row .ch-sel span { font-size:12px; color:var(--text3); }
+  .edit-row .edit-btns { display:flex; gap:6px; margin-left:auto; }
+  .edit-row button { font-size:11px; padding:3px 10px; border-radius:6px; cursor:pointer; }
+  .btn-ok { background:var(--green); color:#fff; border:none; }
+  .btn-cancel-edit { background:none; border:1px solid var(--border2); color:var(--text2); }
+  .icon-btn { background:none; border:none; cursor:pointer; padding:2px 6px; font-size:13px; color:var(--text3); border-radius:4px; }
+  .icon-btn:hover { background:var(--surface2); color:var(--text); }
+  /* CAPACITY BAR */
+  .cap-block { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-right: 8px; flex-shrink: 0; }
+  .cap-bar-bg { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .cap-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+  .cap-label { font-size: 10px; color: var(--text3); text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -220,11 +246,38 @@
       <div class="form-grid full">
         <div class="fg"><label>Descripción</label><textarea id="tDesc" placeholder="Describe la tarea…"></textarea></div>
       </div>
-      <div class="form-grid">
-        <div class="fg"><label>Fecha inicio</label><input type="date" id="tStart" oninput="calcFin()"/></div>
-        <div class="fg"><label>Días hábiles</label><input type="number" id="tDays" min="1" max="120" placeholder="Ej: 5" oninput="calcFin()"/></div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="fg">
+          <label>Fecha inicio</label>
+          <input type="date" id="tStart" oninput="calcFin()" style="color-scheme:dark"/>
+        </div>
+        <div class="fg">
+          <label>Días hábiles</label>
+          <input type="number" id="tDays" min="1" max="120" placeholder="Ej: 5" oninput="calcFin()"/>
+        </div>
+        <div class="fg">
+          <label>Coeficiente CH</label>
+          <div style="display:flex;align-items:center;gap:5px">
+            <select id="tChInt" style="flex:1;font-size:13px">
+              <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+            </select>
+            <span style="color:var(--text3);font-size:13px">.</span>
+            <select id="tChDec" style="flex:1;font-size:13px">
+              <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
+            </select>
+            <span style="color:var(--text3);font-size:11px">CH</span>
+          </div>
+        </div>
       </div>
-      <div class="form-grid full">
+      <div class="form-grid">
+        <div class="fg"><label>Estado tarea</label>
+          <select id="tEstado">
+            <option>Asignada</option><option>En curso</option><option>En pausa</option>
+            <option>Cancelada</option><option>Completada</option>
+          </select>
+        </div>
         <div class="fg"><label>DI que asigna</label>
           <select id="tDI">
             <option value="72722460">Jovanni Andrés Torres Viasús</option>
@@ -234,7 +287,8 @@
             <option value="72722461">Daniel Gonzalez A</option>
             <option value="72722457">Melany Páez</option>
             <option value="74324610">dianadorado</option>
-          </select></div>
+          </select>
+        </div>
       </div>
       <div id="finCalc" style="font-size:12px;color:#A78BFA;font-family:'DM Mono',monospace;margin-bottom:8px;padding:8px 0;display:none">
         📅 Fecha fin estimada: <strong id="finCalcVal"></strong>
@@ -288,7 +342,7 @@
 </main>
 
 <script>
-const API_TOKEN = "REEMPLAZA_AQUI_TU_TOKEN";
+const API_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA";
 const MASTER_BOARD = "9186901942";
 const TAREAS_BOARD = "18415328637";
 const EXCLUIR = new Set(["FINALIZADO","AJUSTADO - DI","AJUSTADO - CLIENTE","EN PAUSA","CANCELADO","NO APLICA","REQ. AJ. - CLIENTE","REQ. AJ. - DI"]);
@@ -305,19 +359,9 @@ let expanded = {};
 
 
 // ─── LOGIN ─────────────────────────────────────────────
-const PWD_HASH = '9f4c8e7a2b1d6f3e5c0a9b8d7e6f4c3a2b1d0e9f8c7b6a5d4e3f2c1b0a9d8e7f';
-
-async function hashStr(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function checkLogin(){
+function checkLogin(){
   const pass = document.getElementById('loginPass').value;
-  const hash = await hashStr(pass);
-  // Comparar con hash de Griky@2026*
-  const correctHash = await hashStr('Griky@2026*');
-  if(hash === correctHash){
+  if(pass === 'Griky@2026*'){
     document.getElementById('loginScreen').style.display='none';
     sessionStorage.setItem('griky_auth','1');
     loadAll();
@@ -327,8 +371,6 @@ async function checkLogin(){
     document.getElementById('loginPass').focus();
   }
 }
-
-// Verificar si ya está autenticado en esta sesión - se maneja al final
 
 // ─── API ───────────────────────────────────────────────
 function getToken(){ return "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY2NDU5MDI4NiwiYWFpIjoxMSwidWlkIjo3MjIzOTU5NiwiaWFkIjoiMjAyNi0wNS0yOVQxMzo1NDo1Ny41NDNaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MjgwMzYwNzgsInJnbiI6InVzZTEifQ.Rw8VnEz0DZ6Un5De4vkMRwgMaHDi_PXyDkdGMWfesLA"; }
@@ -375,7 +417,13 @@ async function loadCursos(){
   const processItems = (items) => {
     items.forEach(item=>{
       const cv = {};
-      item.column_values.forEach(c=>{ cv[c.id]=c.text||''; });
+      const cvNum = {};
+      item.column_values.forEach(c=>{
+        cv[c.id] = c.text||'';
+        // FormulaValue devuelve el número en display_value via inline fragment
+        const n = parseFloat(c.display_value ?? c.text ?? '');
+        cvNum[c.id] = isNaN(n) ? 0 : n;
+      });
       const contenidista = cv['multiple_person_mkw37b6f'];
       if(!contenidista) return;
       const contenidistaLow = contenidista.toLowerCase();
@@ -386,6 +434,8 @@ async function loadCursos(){
       if(!matched) return;
       const estado = cv['color_mkqqfbk5']||'';
       const finDirect = cv['date_mkxp7qj9']||null;
+      // CH: leer desde cv_raw que incluye text y value
+      const chVal = cvNum['formula_mktzr6jb'] ?? 0;
       CURSOS.push({
         p: matched,
         curso: item.name,
@@ -394,6 +444,7 @@ async function loadCursos(){
         inicio: cv['date_mkxepszr']||null,
         finStr: cv['formula_mkxe4s9w']||'',
         finDirect: finDirect,
+        ch: chVal,
         estado
       });
     });
@@ -402,14 +453,14 @@ async function loadCursos(){
   while(hasMore){
     let q;
     if(cursor){
-      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } }`;
+      q = `{ next_items_page(limit:100, cursor:"${cursor}") { cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text value ... on FormulaValue { display_value } } } } }`;
       const d = await mondayQuery(q);
       const page = d.next_items_page;
       cursor = page.cursor || null;
       hasMore = !!cursor;
       processItems(page.items);
     } else {
-      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5"]){ id text } } } } }`;
+      q = `{ boards(ids:[${MASTER_BOARD}]){ items_page(limit:100){ cursor items { id name column_values(ids:["multiple_person_mkw37b6f","multiple_person_mkqs1fc4","text_mkrane1","date_mkxepszr","formula_mkxe4s9w","date_mkxp7qj9","color_mkqqfbk5","formula_mktzr6jb"]){ id text value ... on FormulaValue { display_value } } } } } }`;
       const d = await mondayQuery(q);
       const page = d.boards[0].items_page;
       cursor = page.cursor || null;
@@ -425,7 +476,7 @@ async function loadTareas(){
       items_page(limit:200){
         items {
           id name
-          column_values(ids:["multiple_person_mm3s7dtr","color_mm3s84df","long_text_mm3s1q5c","date_mm3s2d7g","date_mm3sg4nk","multiple_person_mm3s7vtr"]){ id text }
+          column_values(ids:["multiple_person_mm3s7dtr","color_mm3s84df","long_text_mm3s1q5c","date_mm3s2d7g","date_mm3sg4nk","multiple_person_mm3s7vtr","numeric_mm4ee37d","color_mm4eby9n"]){ id text }
         }
       }
     }
@@ -456,9 +507,11 @@ async function loadTareas(){
       p: matched,
       desc: item.name,
       tipo: cv['color_mm3s84df']||'Tarea',
+      estado: cv['color_mm4eby9n']||'Asignada',
       inicio: cv['date_mm3s2d7g']||null,
       fin: cv['date_mm3sg4nk']||null,
-      di: cv['multiple_person_mm3s7vtr']||'—'
+      di: cv['multiple_person_mm3s7vtr']||'—',
+      ch: parseFloat(cv['numeric_mm4ee37d'])||0
     });
   });
 }
@@ -527,13 +580,20 @@ async function saveTask(){
   btn.textContent = 'Guardando…';
 
   try {
+    const chInt = parseInt(document.getElementById('tChInt').value)||0;
+    const chDec = parseInt(document.getElementById('tChDec').value)||0;
+    const chVal = chInt + chDec/10;
+    const estadoVal = document.getElementById('tEstado').value;
+
     const colVals = JSON.stringify({
       "multiple_person_mm3s7dtr": {"personsAndTeams":[{"id":personId,"kind":"person"}]},
       "color_mm3s84df": {"label": tipo},
       "long_text_mm3s1q5c": desc,
       ...(inicio ? {"date_mm3s2d7g":{"date":inicio}} : {}),
       ...(fin ? {"date_mm3sg4nk":{"date":fin}} : {}),
-      "multiple_person_mm3s7vtr": {"personsAndTeams":[{"id":diId,"kind":"person"}]}
+      "multiple_person_mm3s7vtr": {"personsAndTeams":[{"id":diId,"kind":"person"}]},
+      "numeric_mm4ee37d": chVal,
+      "color_mm4eby9n": {"label": estadoVal}
     });
 
     const mutation = `mutation { create_item(board_id:${TAREAS_BOARD}, item_name:"${desc.replace(/"/g,"'")}", column_values:${JSON.stringify(colVals)}) { id } }`;
@@ -591,7 +651,122 @@ function getFinDate(c){
   return parseFormula(c.finStr);
 }
 
+// Capacidad máxima mensual en CH por contenidista
+const CAP_MAX = {
+  'Claudia Carvajal':       9.0,
+  'Wendy Aldana':           7.98,
+  'Andrés Felipe Gallego':  14.5
+};
+
+const CAP_MAX = {
+  'Claudia Carvajal':       9.0,
+  'Wendy Aldana':           7.98,
+  'Andrés Felipe Gallego':  14.5
+};
+
 function cursosActivos(p){ return CURSOS.filter(c=>c.p===p && !EXCLUIR.has(c.estado)); }
+
+const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
+
+function cursosCapMes(name, refDate){
+  const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+  const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
+  return CURSOS.filter(c => {
+    if(c.p !== name) return false;
+    if(EXCLUIR_CAP.has(c.estado)) return false;
+    const ci = c.inicio ? new Date(c.inicio+'T00:00:00') : null;
+    const cf = getFinDate(c);
+    if(!ci && !cf) return true;
+    if(ci && cf) return ci <= mesEnd && cf >= mesStart;
+    if(ci && !cf) return ci <= mesEnd;
+    if(!ci && cf) return cf >= mesStart;
+    return false;
+  });
+}
+
+function tareasCapMes(name, refDate){
+  const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+  const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
+  return TAREAS_MON.filter(t => {
+    if(t.p !== name) return false;
+    const ti = t.inicio ? new Date(t.inicio+'T00:00:00') : null;
+    const tf = t.fin    ? new Date(t.fin+'T00:00:00')    : null;
+    if(!ti && !tf) return true;
+    if(ti && tf) return ti <= mesEnd && tf >= mesStart;
+    if(ti && !tf) return ti <= mesEnd;
+    if(!ti && tf) return tf >= mesStart;
+    return false;
+  });
+}
+
+function capBar(name){
+  const refDate = new Date((document.getElementById('fDate')?.value || new Date().toISOString().split('T')[0])+'T00:00:00');
+  const cursos = cursosCapMes(name, refDate);
+  const tareas = tareasCapMes(name, refDate);
+  const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0)
+                + tareas.reduce((s,t)=>s+(parseFloat(t.ch)||0),0);
+  const max = CAP_MAX[name] || 1;
+  const pct = totalCH / max * 100;
+  const pctCapped = Math.min(pct, 100);
+  const color = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
+  const labelColor = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--text3)';
+  return `<div class="cap-block">
+    <div class="cap-bar-bg" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
+      <div class="cap-bar-fill" style="width:${pctCapped.toFixed(1)}%;background:${color}"></div>
+    </div>
+    <div class="cap-label" style="color:${labelColor}">${totalCH.toFixed(2)} / ${max} CH · ${pct.toFixed(0)}%</div>
+  </div>`;
+}
+
+function estadoTareaStyle(e){
+  const s={
+    'Asignada':  'background:#E6F1FB;color:#185FA5',
+    'En curso':  'background:#E1F5EE;color:#0F6E56',
+    'En pausa':  'background:#FAEEDA;color:#854F0B',
+    'Cancelada': 'background:#FCEBEB;color:#A32D2D',
+    'Completada':'background:#EAF3DE;color:#3B6D11'
+  };
+  return s[e]||'background:var(--surface2);color:var(--text3)';
+}
+
+// Para capacidad: excluir SOLO cancelado, en pausa y no aplica
+const EXCLUIR_CAP = new Set(["CANCELADO","EN PAUSA","NO APLICA"]);
+
+function cursosCapMes(name, refDate){
+  // Solo cursos activos DURANTE el mes de la fecha de referencia
+  const mesStart = new Date(refDate.getFullYear(), refDate.getMonth(), 1);
+  const mesEnd   = new Date(refDate.getFullYear(), refDate.getMonth()+1, 0);
+  return CURSOS.filter(c => {
+    if(c.p !== name) return false;
+    if(EXCLUIR_CAP.has(c.estado)) return false;
+    const ci = c.inicio ? new Date(c.inicio+'T00:00:00') : null;
+    const cf = getFinDate(c);
+    // Sin fechas: se incluye siempre (curso asignado sin fecha aún planificada)
+    if(!ci && !cf) return true;
+    // Con fechas: debe solapar con el mes
+    if(ci && cf) return ci <= mesEnd && cf >= mesStart;
+    if(ci && !cf) return ci <= mesEnd;
+    if(!ci && cf) return cf >= mesStart;
+    return false;
+  });
+}
+
+function capBar(name){
+  const refDate = new Date((document.getElementById('fDate')?.value || new Date().toISOString().split('T')[0])+'T00:00:00');
+  const cursos = cursosCapMes(name, refDate);
+  const totalCH = cursos.reduce((s,c)=>s+(parseFloat(c.ch)||0),0);
+  const max = CAP_MAX[name] || 1;
+  const pct = totalCH / max * 100;
+  const pctCapped = Math.min(pct, 100);
+  const color = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
+  const labelColor = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--text3)';
+  return `<div class="cap-block">
+    <div class="cap-bar-bg" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100" aria-label="Capacidad ${name} ${pct.toFixed(0)}%">
+      <div class="cap-bar-fill" style="width:${pctCapped.toFixed(1)}%;background:${color}"></div>
+    </div>
+    <div class="cap-label" style="color:${labelColor}">${totalCH.toFixed(2)} / ${max} CH · ${pct.toFixed(0)}%</div>
+  </div>`;
+}
 
 function overlaps(a1,a2,b1,b2){
   if(!a1||!b1) return false;
@@ -724,18 +899,31 @@ function render(){
       const s=getStatus(t.inicio,fd,ref);
       const isCr=confKeys.has(t.desc);
       const w=conflicts.filter(([a,b])=>a===t.desc||b===t.desc).map(([a,b])=>a===t.desc?b:a);
-      return `<div class="row${isCr?' cr':''}">
+      const chStr=t.ch>0?`<span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:4px">${parseFloat(t.ch).toFixed(1)} CH</span>`:'';
+      const editFormId=`ef_${t.id}`;
+      return `<div class="row${isCr?' cr':''}" id="row_${t.id}"
+        data-id="${t.id}" data-desc="${(t.desc||'').replace(/"/g,'&quot;')}" data-tipo="${t.tipo||''}"
+        data-estado="${t.estado||'Asignada'}" data-ch="${t.ch||0}"
+        data-inicio="${t.inicio||''}" data-fin="${t.fin||''}" data-di="${(t.di||'').replace(/"/g,'&quot;')}">
         <div class="rdot sq" style="background:${isCr?'var(--red)':sColor(s)}"></div>
         <div class="rinfo">
-          <div class="rname">${t.desc} <span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:5px">${t.tipo}</span></div>
-          <div class="rmeta">👤 Asignado por: ${t.di}</div>
+          <div class="rname">${t.desc}
+            <span style="font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:4px;margin-left:4px">${t.tipo}</span>
+            ${chStr}
+          </div>
+          <div class="rmeta">
+            <span style="font-size:10px;padding:1px 6px;border-radius:3px;margin-right:5px;${estadoTareaStyle(t.estado)}">${t.estado||'Asignada'}</span>
+            👤 Asignado por: ${t.di}
+          </div>
           ${isCr?`<div class="conflict-note">⚠ Conflicto con: ${w.join(', ')}</div>`:''}
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <div class="rdates">${fmtS(pd(t.inicio))}<br>→ ${fmtS(fd)}</div>
-          <button class="del-btn" onclick="deleteTask('${t.id}','${name}')">✕ Eliminar</button>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="rdates" style="text-align:right">${fmtS(pd(t.inicio))}<br>→ ${fmtS(fd)}</div>
+          <button class="icon-btn" title="Editar" onclick="showEditRow(this.closest('[data-id]'))">✏️</button>
+          <button class="icon-btn" title="Eliminar" onclick="deleteTask('${t.id}','${name}')">🗑️</button>
         </div>
-      </div>`;
+      </div>
+      <div id="${editFormId}" style="display:none"></div>`;
     }).join('');
 
     return `<div class="card${hasConflict?' conflict':''}" id="${id}">
@@ -745,12 +933,14 @@ function render(){
           <div class="pname">${name}</div>
           <div class="pmeta">${cursos.length} cursos activos · ${tareas.length} tareas adicionales</div>
         </div>
+        ${capBar(name)}
         ${pillHtml(overall,nxt,hasConflict)}
         <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4,6 8,10 12,6"/></svg>
       </div>
       <div class="card-body" style="display:${isOpen?'block':'none'}">
         ${cursos.length>0?`<div class="sec-label"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h4"/></svg>Cursos activos (Monday)</div>${cRows}`:'<div style="padding:12px 18px;font-size:12px;color:var(--text3);font-style:italic">Sin cursos activos en este momento.</div>'}
-        ${tareas.length>0?`<div class="sec-label" style="margin-top:4px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 7,9 13,3"/><path d="M3 11h10"/></svg>Tareas adicionales</div>${tRows}`:''}
+        <div class="sec-label" style="margin-top:4px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 7,9 13,3"/><path d="M3 11h10"/></svg>Tareas adicionales</div>
+        ${tareas.length>0 ? tRows : '<div style="padding:6px 18px 8px;font-size:12px;color:var(--text3);font-style:italic">Sin tareas adicionales.</div>'}
       </div>
     </div>`;
   });
@@ -759,6 +949,60 @@ function render(){
   document.getElementById('sFree').textContent=freeN;
   document.getElementById('sConf').textContent=confN;
   document.getElementById('dash').innerHTML=cards.join('')||`<div class="empty">Sin resultados para los filtros seleccionados.</div>`;
+}
+
+function showEditRow(el){
+  const id=el.dataset.id, desc=el.dataset.desc||'', tipo=el.dataset.tipo||'',
+        estado=el.dataset.estado||'Asignada', ch=parseFloat(el.dataset.ch)||0,
+        inicio=el.dataset.inicio||'', fin=el.dataset.fin||'', di=el.dataset.di||'';
+  const ef = document.getElementById('ef_'+id);
+  if(!ef) return;
+  const chI=Math.floor(ch), chD=Math.round((ch-Math.floor(ch))*10);
+  const tipos=['Ajuste de contenido','Revisión','Reunión','Corrección','Investigación','Otro'];
+  const estados=['Asignada','En curso','En pausa','Cancelada','Completada'];
+  const tipoOpts=tipos.map(t=>`<option${t===tipo?' selected':''}>${t}</option>`).join('');
+  const estOpts=estados.map(e=>`<option${e===estado?' selected':''}>${e}</option>`).join('');
+  const intOpts=[...Array(11).keys()].map(i=>`<option${i===chI?' selected':''}>${i}</option>`).join('');
+  const decOpts=[...Array(10).keys()].map(i=>`<option${i===chD?' selected':''}>${i}</option>`).join('');
+  ef.innerHTML=`<div class="edit-row">
+    <input type="text" id="ed_desc_${id}" value="${desc}" style="flex:2;min-width:100px"/>
+    <select id="ed_tipo_${id}">${tipoOpts}</select>
+    <select id="ed_est_${id}">${estOpts}</select>
+    <div class="ch-sel"><select id="ed_chi_${id}">${intOpts}</select><span>.</span><select id="ed_chd_${id}">${decOpts}</select><span>CH</span></div>
+    <input type="date" id="ed_ini_${id}" value="${inicio}" style="color-scheme:dark"/>
+    <input type="date" id="ed_fin_${id}" value="${fin}" style="color-scheme:dark"/>
+    <div class="edit-btns">
+      <button class="btn-ok" onclick="updateTask('${id}')">✓</button>
+      <button class="btn-cancel-edit" onclick="hideEditRow('${id}')">✗</button>
+    </div>
+  </div>`;
+  ef.style.display='block';
+}
+
+function hideEditRow(id){ const ef=document.getElementById('ef_'+id); if(ef) ef.style.display='none'; }
+
+async function updateTask(id){
+  const desc=document.getElementById('ed_desc_'+id).value.trim();
+  const tipo=document.getElementById('ed_tipo_'+id).value;
+  const est=document.getElementById('ed_est_'+id).value;
+  const chI=parseInt(document.getElementById('ed_chi_'+id).value)||0;
+  const chD=parseInt(document.getElementById('ed_chd_'+id).value)||0;
+  const ch=chI+chD/10;
+  const ini=document.getElementById('ed_ini_'+id).value||null;
+  const fin=document.getElementById('ed_fin_'+id).value||null;
+  try {
+    const colVals=JSON.stringify({
+      "color_mm3s84df":{"label":tipo},
+      "color_mm4eby9n":{"label":est},
+      "numeric_mm4ee37d":ch,
+      ...(ini?{"date_mm3s2d7g":{"date":ini}}:{}),
+      ...(fin?{"date_mm3sg4nk":{"date":fin}}:{})
+    });
+    await mondayQuery(`mutation{change_multiple_column_values(board_id:${TAREAS_BOARD},item_id:${id},column_values:${JSON.stringify(colVals)}){id}}`);
+    hideEditRow(id);
+    await loadTareas();
+    render();
+  } catch(e){ alert('Error: '+e.message); }
 }
 
 function toggle(id){ expanded[id]=!expanded[id]; render(); }
@@ -771,6 +1015,15 @@ function togglePanel(){
 const navDate=document.getElementById('navDate');
 function updateDate(){ navDate.textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); }
 updateDate(); setInterval(updateDate,60000);
+
+// INICIO AUTOMÁTICO
+document.getElementById('configCard').style.display='none';
+if(sessionStorage.getItem('griky_auth')==='1'){
+  document.getElementById('loginScreen').style.display='none';
+  loadAll();
+} else {
+  document.getElementById('loginScreen').style.display='flex';
+}
 
 // INICIO AUTOMÁTICO
 document.getElementById('configCard').style.display='none';
