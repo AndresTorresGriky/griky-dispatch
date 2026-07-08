@@ -156,6 +156,30 @@
   .cap-bar-bg { width: 90px; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
   .cap-bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
   .cap-label { font-size: 10px; color: var(--text3); text-align: right; font-family: 'DM Mono', monospace; white-space: nowrap; }
+  /* COMPLETADOS */
+  .completed-section { border-top: 1px solid var(--border); margin-top: 4px; }
+  .completed-toggle { display:flex; align-items:center; gap:6px; padding:8px 18px; cursor:pointer; font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; user-select:none; }
+  .completed-toggle:hover { color:var(--text2); }
+  .completed-toggle svg { transition:transform .2s; }
+  .completed-toggle.open svg { transform:rotate(180deg); }
+  .completed-body { display:none; }
+  /* HISTÓRICO MODAL */
+  .hist-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.7); z-index:500; display:flex; align-items:center; justify-content:center; }
+  .hist-modal { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius); width:90%; max-width:720px; max-height:80vh; display:flex; flex-direction:column; }
+  .hist-header { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--border); }
+  .hist-header h3 { font-size:15px; font-weight:500; flex:1; }
+  .hist-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; }
+  .hist-body { overflow-y:auto; padding:8px 0; flex:1; }
+  .hist-month { font-size:11px; font-weight:500; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; padding:10px 20px 4px; }
+  .hist-row { display:flex; align-items:center; gap:8px; padding:7px 20px; border-bottom:1px solid var(--border); font-size:12px; }
+  .hist-row:last-child { border-bottom:none; }
+  .hist-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .hist-dot.sq { border-radius:2px; }
+  .hist-name { flex:1; color:var(--text); }
+  .hist-meta { color:var(--text3); font-size:11px; }
+  .hist-dates { color:var(--text3); font-size:11px; white-space:nowrap; text-align:right; font-family:'DM Mono',monospace; }
+  .btn-hist { display:flex; align-items:center; gap:5px; font-size:11px; background:var(--surface2); color:var(--text2); border:1px solid var(--border2); border-radius:var(--radius-sm); padding:4px 10px; cursor:pointer; transition:all .15s; }
+  .btn-hist:hover { color:var(--accent2); border-color:var(--accent2); }
   .footnote { font-size: 11px; color: var(--text3); margin-top: 24px; font-family: 'DM Mono', monospace; }
 
   /* EDIT ROW */
@@ -596,7 +620,10 @@ async function saveTask(){
       "color_mm4eby9n": {"label": estadoVal}
     });
 
-    const mutation = `mutation { create_item(board_id:${TAREAS_BOARD}, item_name:"${desc.replace(/"/g,"'")}", column_values:${JSON.stringify(colVals)}) { id } }`;
+    const safeName = desc.replace(/[\u2013\u2014\u2018\u2019\u201C\u201D]/g, c => ({
+      '\u2013':'-','\u2014':'-','\u2018':"'",'\u2019':"'",'\u201C':'"','\u201D':'"'
+    }[c])).replace(/"/g,"'").trim();
+    const mutation = `mutation { create_item(board_id:${TAREAS_BOARD}, item_name:${JSON.stringify(safeName)}, column_values:${JSON.stringify(colVals)}) { id } }`;
     await mondayQuery(mutation);
 
     // Reset form
@@ -778,7 +805,8 @@ function nextAvail(person, ref){
 
 function getConflicts(person){
   const cur=cursosActivos(person).map(c=>({key:c.curso,i:c.inicio,f:getFinDate(c)})).filter(x=>x.i||x.f);
-  const tar=TAREAS_MON.filter(t=>t.p===person&&(t.inicio||t.fin)).map(t=>({key:t.desc,i:t.inicio,f:pd(t.fin)}));
+  // Excluir tareas Completadas y Canceladas del cálculo de conflictos
+  const tar=TAREAS_MON.filter(t=>t.p===person&&(t.inicio||t.fin)&&t.estado!=='Completada'&&t.estado!=='Cancelada').map(t=>({key:t.desc,i:t.inicio,f:pd(t.fin)}));
   const all=[...cur,...tar];
   const pairs=[];
   for(let a=0;a<all.length;a++) for(let b=a+1;b<all.length;b++)
@@ -814,7 +842,19 @@ function render(){
 
   const cards=PEOPLE.map(name=>{
     const cursos=cursosActivos(name);
-    const tareas=TAREAS_MON.filter(t=>t.p===name);
+    // Separar tareas activas (no completadas/canceladas) de completadas
+    const tareasActivas=TAREAS_MON.filter(t=>t.p===name && t.estado!=='Completada' && t.estado!=='Cancelada');
+    const tareasCompletadas=TAREAS_MON.filter(t=>t.p===name && (t.estado==='Completada'||t.estado==='Cancelada'));
+    const tareas=tareasActivas; // para compatibilidad con el resto del código
+    // Cursos finalizados del mes actual
+    const mesStart=new Date(ref.getFullYear(),ref.getMonth(),1);
+    const mesEnd=new Date(ref.getFullYear(),ref.getMonth()+1,0);
+    const cursosFinMes=CURSOS.filter(c=>{
+      if(c.p!==name) return false;
+      if(c.estado!=='FINALIZADO') return false;
+      const cf=getFinDate(c);
+      return cf && cf>=mesStart && cf<=mesEnd;
+    });
     const conflicts=getConflicts(name);
     const hasConflict=conflicts.length>0;
     const confKeys=new Set(conflicts.flat());
@@ -893,6 +933,30 @@ function render(){
         ${cursos.length>0?`<div class="sec-label"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M5 5h6M5 11h4"/></svg>Cursos activos (Monday)</div>${cRows}`:'<div style="padding:12px 18px;font-size:12px;color:var(--text3);font-style:italic">Sin cursos activos en este momento.</div>'}
         <div class="sec-label" style="margin-top:4px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,5 7,9 13,3"/><path d="M3 11h10"/></svg>Tareas adicionales</div>
         ${tareas.length>0 ? tRows : '<div style="padding:6px 18px 8px;font-size:12px;color:var(--text3);font-style:italic">Sin tareas adicionales.</div>'}
+        ${(cursosFinMes.length>0||tareasCompletadas.length>0)?`
+        <div class="completed-section">
+          <div class="completed-toggle" id="ct_${id}" onclick="toggleCompleted('${id}')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4,6 8,10 12,6"/></svg>
+            ✅ Completados del mes (${cursosFinMes.length+tareasCompletadas.length})
+          </div>
+          <div class="completed-body" id="cb_${id}">
+            ${cursosFinMes.map(c=>`<div class="hist-row">
+              <div class="hist-dot" style="background:var(--green)"></div>
+              <div class="hist-name">${c.curso} <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;margin-left:4px">FINALIZADO</span></div>
+              <div class="hist-meta">🏢 ${c.cliente}</div>
+              <div class="hist-dates">${fmtS(pd(c.inicio))} → ${fmtS(getFinDate(c))}</div>
+            </div>`).join('')}
+            ${tareasCompletadas.map(t=>`<div class="hist-row">
+              <div class="hist-dot sq" style="background:var(--green)"></div>
+              <div class="hist-name">${t.desc} <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;margin-left:4px">${t.estado}</span></div>
+              <div class="hist-meta">${t.tipo} · ${t.ch>0?t.ch.toFixed(1)+' CH':''}</div>
+              <div class="hist-dates">${fmtS(pd(t.inicio))} → ${fmtS(pd(t.fin))}</div>
+            </div>`).join('')}
+          </div>
+        </div>`:''}
+        <div style="padding:8px 18px 10px;display:flex;justify-content:flex-end">
+          <button class="btn-hist" onclick="showHistorico('${name}')">📋 Histórico</button>
+        </div>
       </div>
     </div>`;
   });
@@ -955,6 +1019,74 @@ async function updateTask(id){
     await loadTareas();
     render();
   } catch(e){ alert('Error: '+e.message); }
+}
+
+function toggleCompleted(cardId){
+  const toggle=document.getElementById('ct_'+cardId);
+  const body=document.getElementById('cb_'+cardId);
+  if(!toggle||!body) return;
+  const isOpen=body.style.display==='block';
+  body.style.display=isOpen?'none':'block';
+  toggle.classList.toggle('open',!isOpen);
+}
+
+function showHistorico(name){
+  // Cursos finalizados del contenidista (todos, sin filtro de mes)
+  const cursosFin=CURSOS.filter(c=>c.p===name && c.estado==='FINALIZADO');
+  // Tareas completadas/canceladas (todas)
+  const tareasComp=TAREAS_MON.filter(t=>t.p===name && (t.estado==='Completada'||t.estado==='Cancelada'));
+
+  // Agrupar por mes
+  const grupos={};
+  const addToGroup=(fecha,html)=>{
+    const key=fecha?new Date(fecha+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}):'Sin fecha';
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(html);
+  };
+
+  cursosFin.forEach(c=>{
+    const fd=getFinDate(c);
+    const key=fd?fd.toLocaleDateString('es-CO',{month:'long',year:'numeric'}):'Sin fecha';
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(`<div class="hist-row">
+      <div class="hist-dot" style="background:var(--green)"></div>
+      <div class="hist-name">${c.curso} <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;margin-left:4px">FINALIZADO</span></div>
+      <div class="hist-meta">🏢 ${c.cliente} · DI: ${c.di}</div>
+      <div class="hist-dates">${fmtS(pd(c.inicio))} → ${fmtS(fd)}</div>
+    </div>`);
+  });
+
+  tareasComp.forEach(t=>{
+    const key=t.fin?new Date(t.fin+'T00:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'}):'Sin fecha';
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(`<div class="hist-row">
+      <div class="hist-dot sq" style="background:var(--green)"></div>
+      <div class="hist-name">${t.desc} <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:3px;margin-left:4px">${t.estado}</span></div>
+      <div class="hist-meta">${t.tipo}${t.ch>0?' · '+t.ch.toFixed(1)+' CH':''} · Asignado por: ${t.di}</div>
+      <div class="hist-dates">${fmtS(pd(t.inicio))} → ${fmtS(pd(t.fin))}</div>
+    </div>`);
+  });
+
+  const total=cursosFin.length+tareasComp.length;
+  const bodyHtml=Object.keys(grupos).length===0
+    ?'<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Sin actividades finalizadas registradas.</div>'
+    :Object.entries(grupos).map(([mes,rows])=>`
+      <div class="hist-month">${mes}</div>
+      ${rows.join('')}
+    `).join('');
+
+  const modal=document.createElement('div');
+  modal.className='hist-overlay';
+  modal.innerHTML=`<div class="hist-modal">
+    <div class="hist-header">
+      <div style="font-size:24px">${AVATARS[name]?`<span style="background:${AVATARS[name].bg};color:${AVATARS[name].color};width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:500">${initials(name)}</span>`:''}</div>
+      <h3>Histórico · ${name} <span style="font-size:12px;color:var(--text3);font-weight:400">(${total} registros)</span></h3>
+      <button class="hist-close" onclick="this.closest('.hist-overlay').remove()">✕</button>
+    </div>
+    <div class="hist-body">${bodyHtml}</div>
+  </div>`;
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function toggle(id){ expanded[id]=!expanded[id]; render(); }
